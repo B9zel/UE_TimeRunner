@@ -13,4 +13,8 @@ UCLASS()
 class TIMERUNNER_API ATestTimerRunnerCharacter : public ATimerRunnerCharacter
 {
 	GENERATED_BODY()
+
+public:
+
+	UIntoxicationComponent* GetIntoxicationComponent() const;
 };

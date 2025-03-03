@@ -7,6 +7,9 @@
 #include <Tests/AutomationCommon.h>
 #include "TimeRunner/Characters/TimeRunner/TimerRunnerCharacter.h"
 #include <EnhancedInputComponent.h>
+#include "TimeRunner/Tests/TestUtils.h"
+
+using namespace AutomationTestUtils;
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCharacterCanBeInput, "TimeRunner.Characters.TimeRunner.CharacterCanBeInput",
 								 EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::HighPriority | EAutomationTestFlags::ProductFilter);
@@ -17,13 +20,10 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCharacterShouldBeTimeRange, "TimeRunner.Charac
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FCharacterShouldApplyDilation, "TimeRunner.Characters.TimeRunner.CharacterShouldApplyDilation",
 								 EAutomationTestFlags::ApplicationContextMask | EAutomationTestFlags::HighPriority | EAutomationTestFlags::ProductFilter);
 
-const FString NameMap = "/Game/Tests/Level/L_EmptyTest";
-const FString BPTimeRunnerName = "/Game/Game/Blueprints/Characters/TimeRunner/BP_TimeRunnerCharacter.BP_TimeRunnerCharacter";
-
 bool FCharacterCanBeInput::RunTest(const FString& Parameters)
 {
+	OpenAutomationMap level(AutomationTestUtils::NameTestMap);
 
-	TestTrue("Can't open map", AutomationOpenMap(FString(NameMap)));
 	AddInfo("Open map");
 
 	UWorld* World = AutomationCommon::GetAnyGameWorld();
@@ -45,7 +45,7 @@ bool FCharacterCanBeInput::RunTest(const FString& Parameters)
 	if (!TestNotNull("UEnhancedInputComponent class dont't exist", EnhuncedInput)) return false;
 	AddInfo("Received enhanced input component");
 
-	const TArray<UInputAction*> Inputs = {Runner->GetInputObject().RunAction, Runner->GetInputObject().LookActions};
+	const TArray<UInputAction*> Inputs = {Runner->GetInputObject().RunAction, Runner->GetInputObject().LookActions, Runner->GetInputObject().JumpActions};
 
 	for (int i = 0; i < EnhuncedInput->GetActionEventBindings().Num(); i++)
 	{
@@ -54,12 +54,11 @@ bool FCharacterCanBeInput::RunTest(const FString& Parameters)
 
 		if (!Inputs.Contains(Input->GetAction()))
 		{
-			AddError(FString::Printf(TEXT("InputComponent of \"ATimerRunnerCharacter\" doesn't have %s"), *Input->GetAction()->GetName()), 1);
+			AddError(FString::Printf(TEXT("InputComponent of \"ATimerRunnerCharacter\" doesn't have %s"), *Input->GetAction()->GetName()));
 			return false;
 		}
 	}
 
-	ADD_LATENT_AUTOMATION_COMMAND(FExitGameCommand);
 	return true;
 }
 
