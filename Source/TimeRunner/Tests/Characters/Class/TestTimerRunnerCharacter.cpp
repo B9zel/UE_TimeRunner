@@ -6,3 +6,24 @@ UIntoxicationComponent* ATestTimerRunnerCharacter::GetIntoxicationComponent() co
 {
 	return IntoxicationComponent;
 }
+
+UHealthComponent* ATestTimerRunnerCharacter::GetHealthComponent() const
+{
+	return HealthComponent;
+}
+
+void ATestTimerRunnerCharacter::ApplyDilation()
+{
+	ApplyTimeDilation();
+}
+
+void ATestTimerRunnerCharacter::StopDilation()
+{
+	ResetTimeDilation();
+}
+
+inline UTimeDilationComponent* ATestTimerRunnerCharacter::GetTimeDilationComponent() const
+{
+	return nullptr;
+	// DilationComponent;
+}

@@ -6,6 +6,10 @@
 #include "Components/ActorComponent.h"
 #include "HealthComponent.generated.h"
 
+class UHealthAttributeSet;
+
+class ABaseCharacter;
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class TIMERUNNER_API UHealthComponent : public UActorComponent
 {
@@ -18,10 +22,16 @@ public:
 
 public:
 
+	virtual void InitializeComponent() override;
 	UFUNCTION(BlueprintPure)
 	inline float GetMaxHP() const;
 	UFUNCTION(BlueprintPure)
 	inline float GetCurrentHP() const;
+
+	// UFUNCTION(BlueprintCallable)
+	// void SetMaxHP(const float NewMax);
+	// UFUNCTION(BlueprintCallable)
+	// void SetCurrentHP(const float NewHealt);
 
 protected:
 
@@ -32,10 +42,20 @@ private:
 	UFUNCTION()
 	void TakePlayerDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 
+protected:
+
+	UPROPERTY(EditAnywhere)
+	UDataTable* InitData;
+
 private:
 
-	UPROPERTY(EditAnywhere, meta = (ClampMin = "0.0"))
+	/*UPROPERTY(EditAnywhere, meta = (ClampMin = "0.0"))
 	float m_MaxHP;
 	UPROPERTY()
-	float m_CurrentHP;
+	float m_CurrentHP;*/
+	UPROPERTY()
+	TWeakObjectPtr<ABaseCharacter> Owner;
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UHealthAttributeSet> HealthAttribute;
 };

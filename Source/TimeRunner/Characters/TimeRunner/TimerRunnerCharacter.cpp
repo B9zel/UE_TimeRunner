@@ -10,6 +10,7 @@
 #include <GameFramework/CharacterMovementComponent.h>
 #include "TimeRunner/Components/Health/HealthComponent.h"
 #include "TimeRunner/Components/Intoxication/IntoxicationComponent.h"
+#include "TimeRunner/Components/TimeDilation/TimeDilationComponent.h"
 
 ATimerRunnerCharacter::ATimerRunnerCharacter()
 {
@@ -18,11 +19,13 @@ ATimerRunnerCharacter::ATimerRunnerCharacter()
 
 	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("Health component"));
 	IntoxicationComponent = CreateDefaultSubobject<UIntoxicationComponent>(TEXT("Intoxication component"));
+	DilationComponent = CreateDefaultSubobject<UTimeDilationComponent>(TEXT("Dilation component"));
 
 	check(HealthComponent);
 	check(IntoxicationComponent);
+	check(DilationComponent);
 
-	m_IsTimeDilation = false;
+	m_IsInputMove = false;
 }
 
 void ATimerRunnerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -50,13 +53,15 @@ void ATimerRunnerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	Input->BindAction(InputObjects.LookActions, ETriggerEvent::Triggered, this, &ATimerRunnerCharacter::InputLookCharacter);
 	Input->BindAction(InputObjects.JumpActions, ETriggerEvent::Started, this, &ATimerRunnerCharacter::InputJumpStartCharacter);
 	Input->BindAction(InputObjects.JumpActions, ETriggerEvent::Completed, this, &ATimerRunnerCharacter::InputJumpCompletedCharacter);
+	Input->BindAction(InputObjects.SwitchSpeedActions, ETriggerEvent::Triggered, this, &ATimerRunnerCharacter::InputSwitchSpeedTriggerCharacter);
+	Input->BindAction(InputObjects.CrouchActions, ETriggerEvent::Started, this, &ATimerRunnerCharacter::InputCrouchStartCharacter);
 }
 
 void ATimerRunnerCharacter::Landed(const FHitResult& Hit)
 {
 	Super::Landed(Hit);
 
-	if (GetIsTimeDilation())
+	if (GetIsInputMove())
 	{
 		ApplyTimeDilation();
 	}
@@ -67,10 +72,20 @@ void ATimerRunnerCharacter::OnWalkingOffLedge_Implementation(const FVector& Prev
 {
 	Super::OnWalkingOffLedge_Implementation(PreviousFloorImpactNormal, PreviousFloorContactNormal, PreviousLocation, TimeDelta);
 
-	if (GetIsTimeDilation())
+	if (DilationComponent->GetIsTimeDilation())
 	{
 		ResetTimeDilation();
 		Launch(GetCharacterMovement()->Velocity.GetSafeNormal(), 0.0f);
+	}
+}
+
+void ATimerRunnerCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (DilationComponent)
+	{
+		DilationComponent->ChanageSpeedDelegate.AddDynamic(this, &ATimerRunnerCharacter::OnChangeLevelOfSpeed);
 	}
 }
 
@@ -84,20 +99,17 @@ void ATimerRunnerCharacter::InputRunTriggerCharacter(const FInputActionInstance&
 
 void ATimerRunnerCharacter::InputRunStartCharacter(const FInputActionInstance& Instance)
 {
-	if (!GetCharacterMovement()->IsWalking()) return;
+	SetIsInputMove(true);
+	if (!GetCharacterMovement()->IsWalking() || GetCharacterMovement()->IsCrouching()) return;
 
 	ApplyTimeDilation();
-
-	m_IsTimeDilation = true;
 }
 
 void ATimerRunnerCharacter::InputRunCompletedCharacter(const FInputActionInstance& Instance)
 {
-	if (UGameplayStatics::GetGlobalTimeDilation(this) != GetRunWorldTime()) return;
-
+	// if (UGameplayStatics::GetGlobalTimeDilation(this) != DilationComponent->GetRunWorldTime()) return;
+	SetIsInputMove(false);
 	ResetTimeDilation();
-
-	m_IsTimeDilation = false;
 }
 
 void ATimerRunnerCharacter::InputLookCharacter(const FInputActionInstance& Instance)
@@ -112,11 +124,11 @@ void ATimerRunnerCharacter::InputJumpStartCharacter(const FInputActionInstance& 
 {
 	Jump();
 
-	if (GetIsTimeDilation())
+	/*if (DilationComponent->GetIsTimeDilation())
 	{
 		ResetTimeDilation();
 		Launch(GetCharacterMovement()->Velocity.GetSafeNormal(), m_ZForceLaunch);
-	}
+	}*/
 }
 
 void ATimerRunnerCharacter::InputJumpCompletedCharacter(const FInputActionInstance& Instance)
@@ -124,22 +136,48 @@ void ATimerRunnerCharacter::InputJumpCompletedCharacter(const FInputActionInstan
 	StopJumping();
 }
 
+void ATimerRunnerCharacter::InputSwitchSpeedTriggerCharacter(const FInputActionInstance& Instance)
+{
+	const float DirectScroll = Instance.GetValue().Get<float>();
+	if (DirectScroll > 0.0f)
+	{
+		DilationComponent->IncreaseSpeed();
+	}
+	else
+	{
+		DilationComponent->DecreaseSpeed();
+	}
+	// IntoxicationComponent->ActivateIntixication();
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Cyan,
+									 FString::Printf(TEXT("%f     %f"), Instance.GetValue().Get<float>(), Instance.GetValue().Get<float>()));
+}
+
+void ATimerRunnerCharacter::InputCrouchStartCharacter(const FInputActionInstance& Instance)
+{
+	if (GetCharacterMovement()->IsCrouching())
+	{
+		UnCrouch();
+		if (GetIsInputMove() && !GetCharacterMovement()->IsFalling())
+		{
+			ApplyTimeDilation();
+		}
+	}
+	else
+	{
+		Crouch();
+		ResetTimeDilation();
+	}
+}
+
 void ATimerRunnerCharacter::ApplyTimeDilation()
 {
-	FTimerHandle timer;
-	UGameplayStatics::SetGlobalTimeDilation(this, GetRunWorldTime());
-
+	DilationComponent->EnableTimeDilation();
 	IntoxicationComponent->ActivateIntixication();
-
-	// Call ApplySettingDilation next frame
-	GetWorld()->GetTimerManager().SetTimer(timer, this, &ATimerRunnerCharacter::ApplySettingDilation, UE_SMALL_NUMBER, false);
 }
 
 void ATimerRunnerCharacter::ResetTimeDilation()
 {
-	UGameplayStatics::SetGlobalTimeDilation(this, m_WalkWorldTime);
-	CustomTimeDilation = 1.0f;
-
+	DilationComponent->DisableTimeDilation();
 	IntoxicationComponent->DeactivateIntixication();
 }
 
@@ -151,19 +189,12 @@ void ATimerRunnerCharacter::Launch(const FVector& Direction, const float ZForce)
 	LaunchCharacter(ForceLaunch, true, true);
 }
 
-void ATimerRunnerCharacter::ApplySettingDilation()
+void ATimerRunnerCharacter::OnChangeLevelOfSpeed(const ELevelSpeed NewSpeed)
 {
-	CustomTimeDilation = 1.0f / GetRunWorldTime();
-}
-
-inline float ATimerRunnerCharacter::GetRunWorldTime() const
-{
-	return m_RunWorldTime;
-}
-
-inline float ATimerRunnerCharacter::GetWalkWorldTime() const
-{
-	return m_WalkWorldTime;
+	if (DilationComponent->GetIsTimeDilation())
+	{
+		IntoxicationComponent->RestartIntoxication();
+	}
 }
 
 inline const FInput& ATimerRunnerCharacter::GetInputObject() const
@@ -171,17 +202,12 @@ inline const FInput& ATimerRunnerCharacter::GetInputObject() const
 	return InputObjects;
 }
 
-inline bool ATimerRunnerCharacter::GetIsTimeDilation() const
+bool ATimerRunnerCharacter::GetIsInputMove() const
 {
-	return m_IsTimeDilation;
+	return m_IsInputMove;
 }
 
-void ATimerRunnerCharacter::SetRunWorldTime(const float NewTime)
+void ATimerRunnerCharacter::SetIsInputMove(const bool InputMove)
 {
-	m_RunWorldTime = FMath::Clamp(NewTime, 0.0f, 1.0f);
-}
-
-void ATimerRunnerCharacter::SetWalkWorldTime(const float NewTime)
-{
-	m_WalkWorldTime = FMath::Clamp(NewTime, 0.0f, 1.0f);
+	m_IsInputMove = InputMove;
 }

@@ -16,5 +16,10 @@ class TIMERUNNER_API ATestTimerRunnerCharacter : public ATimerRunnerCharacter
 
 public:
 
+	void ApplyDilation();
+	void StopDilation();
+
+	UTimeDilationComponent* GetTimeDilationComponent() const;
 	UIntoxicationComponent* GetIntoxicationComponent() const;
+	UHealthComponent* GetHealthComponent() const;
 };

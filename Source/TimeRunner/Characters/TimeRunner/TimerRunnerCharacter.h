@@ -11,6 +11,7 @@ class UInputMappingContext;
 class UCameraComponent;
 class UIntoxicationComponent;
 class UHealthComponent;
+class UTimeDilationComponent;
 struct FInputActionInstance;
 
 USTRUCT(BlueprintType)
@@ -26,6 +27,10 @@ public:
 	UInputAction* LookActions;
 	UPROPERTY(EditAnywhere, meta = (Categories = "Input"))
 	UInputAction* JumpActions;
+	UPROPERTY(EditAnywhere, meta = (Categories = "Input"))
+	UInputAction* SwitchSpeedActions;
+	UPROPERTY(EditAnywhere, meta = (Categories = "Input"))
+	UInputAction* CrouchActions;
 
 	UPROPERTY(EditAnywhere, meta = (Categories = "Input"))
 	UInputMappingContext* InputContext;
@@ -42,23 +47,7 @@ public:
 
 public:
 
-	// @return The range of output value is from 0 to 1
-	UFUNCTION(BlueprintPure)
-	inline float GetRunWorldTime() const;
-	// @return The range of output value is from 0 to 1
-	UFUNCTION(BlueprintPure)
-	inline float GetWalkWorldTime() const;
-
 	inline const FInput& GetInputObject() const;
-
-	inline bool GetIsTimeDilation() const;
-
-	// @param The range of input value is from 0 to 1
-	UFUNCTION(BlueprintCallable)
-	void SetRunWorldTime(const float NewTime);
-	// @param The range of input value is from 0 to 1
-	UFUNCTION(BlueprintCallable)
-	void SetWalkWorldTime(const float NewTime);
 
 protected:
 
@@ -67,6 +56,7 @@ protected:
 	virtual void Landed(const FHitResult& Hit) override;
 	virtual void OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal, const FVector& PreviousFloorContactNormal,
 												  const FVector& PreviousLocation, float TimeDelta) override;
+	virtual void BeginPlay() override;
 	// Character method end
 
 	void InputRunTriggerCharacter(const FInputActionInstance& Instance);
@@ -75,40 +65,44 @@ protected:
 	void InputLookCharacter(const FInputActionInstance& Instance);
 	void InputJumpStartCharacter(const FInputActionInstance& Instance);
 	void InputJumpCompletedCharacter(const FInputActionInstance& Instance);
+	void InputSwitchSpeedTriggerCharacter(const FInputActionInstance& Instance);
+	void InputCrouchStartCharacter(const FInputActionInstance& Instance);
 
 	void ApplyTimeDilation();
 	void ResetTimeDilation();
 
 private:
 
-	// Delay one frame
-	void ApplySettingDilation();
+	bool GetIsInputMove() const;
+	void SetIsInputMove(const bool InputMove);
+
 	void Launch(const FVector& Direction, const float ZForce);
+
+	UFUNCTION()
+	void OnChangeLevelOfSpeed(const ELevelSpeed NewSpeed);
 
 protected:
 
 	// Component begin;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	UCameraComponent* CameraComponent;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	UHealthComponent* HealthComponent;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	UIntoxicationComponent* IntoxicationComponent;
-	// Component end
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UCameraComponent> CameraComponent;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UHealthComponent> HealthComponent;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UIntoxicationComponent> IntoxicationComponent;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UTimeDilationComponent> DilationComponent;
+	//  Component end
 
 	UPROPERTY(EditAnywhere)
 	FInput InputObjects;
 
 private:
 
-	UPROPERTY(EditAnywhere, meta = (Categories = "Time", ClampMin = "0.0", ClampMax = "1.0"))
-	float m_RunWorldTime;
-	UPROPERTY(EditAnywhere, meta = (Categories = "Time", ClampMin = "0.0", ClampMax = "1.0"))
-	float m_WalkWorldTime;
 	UPROPERTY(EditAnywhere, meta = (Categories = "Launch", ClampMin = "0.0"))
 	float m_ForceLaunch;
 	UPROPERTY(EditAnywhere, meta = (Categories = "Launch", ClampMin = "0.0"))
 	float m_ZForceLaunch;
-	UPROPERTY()
-	bool m_IsTimeDilation;
+
+	bool m_IsInputMove;
 };

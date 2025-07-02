@@ -4,13 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "GameplayTagContainer.h"
 #include "IntoxicationComponent.generated.h"
 
-struct AbsoluteTimer
-{
-	FTimerHandle Timer;
-	double m_LastRealTime;
-};
+class UIntoxicationAttributeSet;
+class ABaseCharacter;
+struct FGameplayAttribute;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class TIMERUNNER_API UIntoxicationComponent : public UActorComponent
@@ -24,14 +23,18 @@ public:
 public:
 
 	UFUNCTION(BlueprintCallable)
-	void ActivateIntixication(const float DilationForComponent = 1.0f);
+	void ActivateIntixication();
 	UFUNCTION(BlueprintCallable)
-	void DeactivateIntixication(const float DilationForComponent = 1.0f);
+	void DeactivateIntixication();
+	UFUNCTION(BlueprintCallable)
+	void RestartIntoxication();
+
+	const TObjectPtr<UIntoxicationAttributeSet>& GetIntoxicationAttribute() const;
 
 	UFUNCTION(BlueprintPure)
-	float GetCurrentIntoxication() const;
-	UFUNCTION(BlueprintPure)
 	float GetMaxIntoxication() const;
+	UFUNCTION(BlueprintPure)
+	float GetCurrentIntoxication() const;
 	UFUNCTION(BlueprintPure)
 	float GetRateIncrease() const;
 	UFUNCTION(BlueprintPure)
@@ -40,9 +43,13 @@ public:
 	float GetSpeedIncrease() const;
 	UFUNCTION(BlueprintPure)
 	float GetSpeedDecrease() const;
+	UFUNCTION(BlueprintPure)
+	float GetIntoxicationDamage() const;
+	UFUNCTION(BlueprintPure)
+	float GetSafeBorder() const;
+	UFUNCTION(BlueprintPure)
+	float GetRateApplyDamage() const;
 
-	UFUNCTION(BlueprintCallable)
-	void SetCurrentIntoxication(const float NewIntoxication);
 	UFUNCTION(BlueprintCallable)
 	void SetMaxIntoxication(const float NewMax);
 	UFUNCTION(BlueprintCallable)
@@ -53,6 +60,13 @@ public:
 	void SetSpeedIncreaseIntoxication(const float NewSpeed);
 	UFUNCTION(BlueprintCallable)
 	void SetSpeedDecreaseIntoxication(const float NewSpeed);
+	UFUNCTION(BlueprintCallable)
+	void SetIntoxicationDamage(const float NewDamage);
+	// @param NewBorder: input range from 0 to 1
+	UFUNCTION(BlueprintCallable)
+	void SetSafeBorder(const float NewBorder);
+	UFUNCTION(BlueprintCallable)
+	void SetRateApplyDamage(const float NewRate);
 
 protected:
 
@@ -80,32 +94,50 @@ private:
 	UFUNCTION()
 	void StopApplyDamageTimer();
 
+	UFUNCTION()
+	void ChangeIntoxication(const FGameplayAttribute& Attribute, const float NewValue);
+
 private:
 
-	UPROPERTY(EditAnywhere, meta = (ClampMin = "0.0"))
-	float m_MaxIntoxication;
-	UPROPERTY()
-	float m_CurrentIntoxication;
+	UPROPERTY(EditAnywhere, meta = (ClampMin = "1.0"))
+	float MaxIntoxication;
 
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "0.0"))
-	float m_RateIncrease;
+	float RateIncrease;
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "0.0"))
-	float m_RateDecrease;
+	float RateDecrease;
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "0.0"))
-	float m_RateApplyDamage;
+	float RateApplyDamage;
 
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "0.0"))
-	float m_Damage;
+	float Damage;
 
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float m_SafeBorder; // if m_CurrentIntoxication more, apply damage
+	float SafeBorder; // if m_CurrentIntoxication more, apply damage
 
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "0.0"))
-	float m_SpeedIncrease;
+	float SpeedIncrease;
 	UPROPERTY(EditAnywhere, meta = (ClampMin = "0.0"))
-	float m_SpeedDecrease;
+	float SpeedDecrease;
 
 	double m_LastRealTime;
+
+	UPROPERTY()
+	TObjectPtr<UIntoxicationAttributeSet> IntoxicationAttribute;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Parameters|Data")
+	TObjectPtr<UDataTable> IntoxicationConfig;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Parameters|Tag|Ability")
+	FGameplayTagContainer AbilityIntoxicationDamage;
+	UPROPERTY(EditDefaultsOnly, Category = "Parameters|Tag|Ability")
+	FGameplayTag AbilityIncreaseIntoxication;
+	UPROPERTY(EditDefaultsOnly, Category = "Parameters|Tag|Ability")
+	FGameplayTag AbilityDecreaseIntoxication;
+	UPROPERTY(EditDefaultsOnly, Category = "Parameters|Tag|Effect")
+	FGameplayTag EffectIntoxicationDamage;
+
+	TObjectPtr<ABaseCharacter> OwnerCharacter;
 
 	FTimerHandle m_DecreaseTimer;
 	FTimerHandle m_IncreaseTimer;

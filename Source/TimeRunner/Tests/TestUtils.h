@@ -1,4 +1,7 @@
 #pragma once
+
+#if (AUTOMATION_TEST)
+
 #include "CoreMinimal.h"
 #include <Tests/AutomationCommon.h>
 
@@ -23,3 +26,5 @@ public:
 };
 
 } // namespace AutomationTestUtils
+
+#endif

@@ -1,47 +1,83 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Components/Intoxication/IntoxicationComponent.h"
+#include "AbilitySystem/Attributes/Intoxication/IntoxicationAttributeSet.h"
+#include "Characters/BaseCharacter.h"
+#include "AttributeSet.h"
 #include <Kismet/GameplayStatics.h>
+#include <GameplayTask.h>
 
 UIntoxicationComponent::UIntoxicationComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 
-	m_CurrentIntoxication = 0.0f;
-	m_MaxIntoxication = 100.0f;
+	IntoxicationAttribute = CreateDefaultSubobject<UIntoxicationAttributeSet>(TEXT("Intoxication attribute"));
+	check(IntoxicationAttribute);
 
-	m_RateDecrease = 0.0f;
-	m_RateIncrease = 0.0f;
+	IntoxicationAttribute->ChangeAttribute.AddUObject(this, &UIntoxicationComponent::ChangeIntoxication);
 
-	m_SpeedDecrease = 1.0f;
-	m_SpeedIncrease = 1.0f;
+	MaxIntoxication = 100.0f;
+
+	RateDecrease = 0.0f;
+	RateIncrease = 0.0f;
+
+	SpeedDecrease = 1.0f;
+	SpeedIncrease = 1.0f;
 }
 
-void UIntoxicationComponent::ActivateIntixication(const float DilationForComponent)
+void UIntoxicationComponent::ActivateIntixication()
 {
-	auto& TimerManager = GetWorld()->GetTimerManager();
+	IncreaseIntoxication();
+	/*bool res = OwnerCharacter->GetAbilitySystemComponent()->TryActivateAbilitiesByTag(AbilityIncreaseIntoxication.GetSingleTagContainer());
+	 */
+	// UE_LOG(LogTemp, Display, TEXT("%s"), res ? TEXT("true") : TEXT("false"));
+
+	/*auto& TimerManager = GetWorld()->GetTimerManager();
 
 	if (m_IncreaseTimer.IsValid()) return;
 
 	TimerManager.ClearTimer(m_DecreaseTimer);
 	TimerManager.SetTimer(m_IncreaseTimer, this, &UIntoxicationComponent::IncreaseIntoxication,
-						  m_RateIncrease * UGameplayStatics::GetGlobalTimeDilation(GetWorld()), true);
+						  m_RateIncrease * UGameplayStatics::GetGlobalTimeDilation(GetWorld()), true);*/
 }
 
-void UIntoxicationComponent::DeactivateIntixication(const float DilationForComponent)
+void UIntoxicationComponent::DeactivateIntixication()
 {
-	auto& TimerManager = GetWorld()->GetTimerManager();
+	DecreaseIntoxication();
+
+	/*const auto& Tag = AbilityIncreaseIntoxication.GetSingleTagContainer();
+	OwnerCharacter->GetAbilitySystemComponent()->CancelAbilities(&Tag);*/
+	/*auto& TimerManager = GetWorld()->GetTimerManager();
 
 	if (m_DecreaseTimer.IsValid()) return;
 
 	TimerManager.ClearTimer(m_IncreaseTimer);
 	TimerManager.SetTimer(m_DecreaseTimer, this, &UIntoxicationComponent::DecreaseIntoxication,
-						  m_RateDecrease * UGameplayStatics::GetGlobalTimeDilation(GetWorld()), true);
+						  m_RateDecrease * UGameplayStatics::GetGlobalTimeDilation(GetWorld()), true);*/
+}
+
+void UIntoxicationComponent::RestartIntoxication()
+{
+	auto& TimerManager = GetWorld()->GetTimerManager();
+	TimerManager.ClearTimer(m_DecreaseTimer);
+	TimerManager.ClearTimer(m_IncreaseTimer);
+
+	TimerManager.SetTimer(m_IncreaseTimer, this, &UIntoxicationComponent::IncreaseIntoxication,
+						  RateIncrease * UGameplayStatics::GetGlobalTimeDilation(GetWorld()), true);
 }
 
 void UIntoxicationComponent::BeginPlay()
 {
 	Super::BeginPlay();
+
+	OwnerCharacter = GetOwner<ABaseCharacter>();
+	check(OwnerCharacter);
+
+	if (IntoxicationConfig)
+	{
+		OwnerCharacter->GetAbilitySystemComponent()->AddSpawnedAttribute(IntoxicationAttribute);
+		IntoxicationAttribute->InitFromMetaDataTable(IntoxicationConfig.Get());
+	}
 }
 
 void UIntoxicationComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -51,7 +87,11 @@ void UIntoxicationComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 void UIntoxicationComponent::IncreaseIntoxication()
 {
-	if (GetCurrentIntoxication() / GetMaxIntoxication() >= m_SafeBorder && !m_ApplyDamageTimer.IsValid())
+	if (AbilityIncreaseIntoxication.IsValid())
+	{
+		OwnerCharacter->GetAbilitySystemComponent()->TryActivateAbilitiesByTag(AbilityIncreaseIntoxication.GetSingleTagContainer());
+	}
+	/*if (GetCurrentIntoxication() / GetMaxIntoxication() >= m_SafeBorder && !m_ApplyDamageTimer.IsValid())
 	{
 		StartApplyDamageTimer();
 	}
@@ -60,12 +100,16 @@ void UIntoxicationComponent::IncreaseIntoxication()
 		GetWorld()->GetTimerManager().ClearTimer(m_IncreaseTimer);
 	}
 
-	m_CurrentIntoxication = FMath::Clamp(m_CurrentIntoxication + m_SpeedIncrease, 0.0f, m_MaxIntoxication);
+	m_CurrentIntoxication = FMath::Clamp(m_CurrentIntoxication + m_SpeedIncrease, 0.0f, m_MaxIntoxication);*/
 }
 
 void UIntoxicationComponent::DecreaseIntoxication()
 {
-	if (GetCurrentIntoxication() / GetMaxIntoxication() < m_SafeBorder && m_ApplyDamageTimer.IsValid())
+	if (AbilityDecreaseIntoxication.IsValid())
+	{
+		OwnerCharacter->GetAbilitySystemComponent()->TryActivateAbilitiesByTag(AbilityDecreaseIntoxication.GetSingleTagContainer());
+	}
+	/*if (GetCurrentIntoxication() / GetMaxIntoxication() < m_SafeBorder && m_ApplyDamageTimer.IsValid())
 	{
 		StopApplyDamageTimer();
 	}
@@ -73,19 +117,19 @@ void UIntoxicationComponent::DecreaseIntoxication()
 	{
 		GetWorld()->GetTimerManager().ClearTimer(m_DecreaseTimer);
 	}
-	m_CurrentIntoxication = FMath::Clamp(m_CurrentIntoxication - m_SpeedDecrease, 0.0f, m_MaxIntoxication);
+	m_CurrentIntoxication = FMath::Clamp(m_CurrentIntoxication - m_SpeedDecrease, 0.0f, m_MaxIntoxication);*/
 }
 
 void UIntoxicationComponent::ApplyIntoxicationDamage()
 {
-	TSubclassOf<UDamageType> TypeDamage;
-	UGameplayStatics::ApplyDamage(GetOwner(), m_Damage, GetOwner()->GetInstigatorController(), nullptr, TypeDamage);
+	UGameplayStatics::ApplyDamage(GetOwner(), Damage, GetOwner()->GetInstigatorController(), nullptr, TSubclassOf<UDamageType>());
 }
 
 void UIntoxicationComponent::StartApplyDamageTimer()
 {
 	auto& TimerManager = GetWorld()->GetTimerManager();
 	TimerManager.ClearTimer(m_ApplyDamageTimer);
+
 	TimerManager.SetTimer(m_ApplyDamageTimer, this, &UIntoxicationComponent::CheckApplyDamageTimer, UE_KINDA_SMALL_NUMBER, true);
 	m_LastRealTime = FApp::GetCurrentTime();
 }
@@ -93,7 +137,7 @@ void UIntoxicationComponent::StartApplyDamageTimer()
 void UIntoxicationComponent::CheckApplyDamageTimer()
 {
 	const double RealTime = FApp::GetCurrentTime();
-	if (RealTime - m_LastRealTime >= m_RateApplyDamage)
+	if (RealTime - m_LastRealTime >= RateApplyDamage)
 	{
 		ApplyIntoxicationDamage();
 		m_LastRealTime = RealTime;
@@ -105,83 +149,142 @@ void UIntoxicationComponent::StopApplyDamageTimer()
 	GetWorld()->GetTimerManager().ClearTimer(m_ApplyDamageTimer);
 }
 
-float UIntoxicationComponent::GetCurrentIntoxication() const
+void UIntoxicationComponent::ChangeIntoxication(const FGameplayAttribute& Attribute, const float NewValue)
 {
-	return m_CurrentIntoxication;
+	if (Attribute == IntoxicationAttribute->GetIntoxicationAttribute())
+	{
+		if (NewValue >= SafeBorder * GetMaxIntoxication())
+		{
+			OwnerCharacter->GetAbilitySystemComponent()->TryActivateAbilitiesByTag(AbilityIntoxicationDamage);
+		}
+		else
+		{
+			OwnerCharacter->GetAbilitySystemComponent()->CancelAbilities(&AbilityIntoxicationDamage);
+		}
+	}
 }
 
 float UIntoxicationComponent::GetMaxIntoxication() const
 {
-	return m_MaxIntoxication;
+	return IntoxicationAttribute->GetMaxIntoxication();
+}
+
+float UIntoxicationComponent::GetCurrentIntoxication() const
+{
+	return IntoxicationAttribute->GetIntoxication();
 }
 
 float UIntoxicationComponent::GetRateIncrease() const
 {
-	return m_RateIncrease;
+	return RateIncrease;
 }
 
 float UIntoxicationComponent::GetRateDecrease() const
 {
-	return m_RateDecrease;
+	return RateDecrease;
 }
 
 float UIntoxicationComponent::GetSpeedIncrease() const
 {
-	return m_SpeedIncrease;
+	return SpeedIncrease;
 }
 
 float UIntoxicationComponent::GetSpeedDecrease() const
 {
-	return m_SpeedDecrease;
+	return SpeedDecrease;
 }
 
-void UIntoxicationComponent::SetCurrentIntoxication(const float NewIntoxication)
+float UIntoxicationComponent::GetIntoxicationDamage() const
 {
-	m_CurrentIntoxication = FMath::Clamp(NewIntoxication, 0.0, GetMaxIntoxication());
+	return Damage;
+}
+
+float UIntoxicationComponent::GetSafeBorder() const
+{
+	return SafeBorder;
+}
+
+float UIntoxicationComponent::GetRateApplyDamage() const
+{
+	return RateApplyDamage;
 }
 
 void UIntoxicationComponent::SetMaxIntoxication(const float NewMax)
 {
-	if (NewMax < 0.0f)
+	if (NewMax < 1.0f)
 	{
-		m_MaxIntoxication = 0.0f;
+		MaxIntoxication = 1.0f;
 		return;
 	}
-	m_MaxIntoxication = NewMax;
+	MaxIntoxication = NewMax;
 }
 
 void UIntoxicationComponent::SetRateIncrease(const float NewRate)
 {
 	if (NewRate <= UE_KINDA_SMALL_NUMBER)
 	{
-		m_RateIncrease = UE_KINDA_SMALL_NUMBER;
+		RateIncrease = UE_KINDA_SMALL_NUMBER;
+		return;
 	}
-	m_RateIncrease = NewRate;
+	RateIncrease = NewRate;
 }
 
 void UIntoxicationComponent::SetRateDecrease(const float NewRate)
 {
 	if (NewRate <= UE_KINDA_SMALL_NUMBER)
 	{
-		m_RateDecrease = UE_KINDA_SMALL_NUMBER;
+		RateDecrease = UE_KINDA_SMALL_NUMBER;
+		return;
 	}
-	m_RateDecrease = NewRate;
+	RateDecrease = NewRate;
 }
 
 void UIntoxicationComponent::SetSpeedIncreaseIntoxication(const float NewSpeed)
 {
 	if (NewSpeed <= 0.0f)
 	{
-		m_SpeedIncrease = 0.0f;
+		SpeedIncrease = 0.0f;
+		return;
 	}
-	m_SpeedIncrease = NewSpeed;
+	SpeedIncrease = NewSpeed;
 }
 
 void UIntoxicationComponent::SetSpeedDecreaseIntoxication(const float NewSpeed)
 {
 	if (NewSpeed <= 0.0f)
 	{
-		m_SpeedDecrease = 0.0f;
+		SpeedDecrease = 0.0f;
+		return;
 	}
-	m_SpeedDecrease = NewSpeed;
+	SpeedDecrease = NewSpeed;
+}
+
+void UIntoxicationComponent::SetIntoxicationDamage(const float NewDamage)
+{
+	if (NewDamage <= 0.0f)
+	{
+		Damage = 0.0f;
+		return;
+	}
+	Damage = NewDamage;
+}
+
+void UIntoxicationComponent::SetSafeBorder(const float NewBorder)
+{
+	SafeBorder = FMath::Clamp(NewBorder, 0.0f, 1.0f);
+}
+
+void UIntoxicationComponent::SetRateApplyDamage(const float NewRate)
+{
+	if (NewRate <= UE_KINDA_SMALL_NUMBER)
+	{
+		RateApplyDamage = UE_KINDA_SMALL_NUMBER;
+		return;
+	}
+	RateApplyDamage = NewRate;
+}
+
+const TObjectPtr<UIntoxicationAttributeSet>& UIntoxicationComponent::GetIntoxicationAttribute() const
+{
+	return IntoxicationAttribute;
 }
