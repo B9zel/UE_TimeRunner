@@ -29,7 +29,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void RestartIntoxication();
 
-	const TObjectPtr<UIntoxicationAttributeSet>& GetIntoxicationAttribute() const;
+	const TObjectPtr<const UIntoxicationAttributeSet>& GetIntoxicationAttribute() const;
 
 	UFUNCTION(BlueprintPure)
 	float GetMaxIntoxication() const;
@@ -123,7 +123,7 @@ private:
 	double m_LastRealTime;
 
 	UPROPERTY()
-	TObjectPtr<UIntoxicationAttributeSet> IntoxicationAttribute;
+	TObjectPtr<const UIntoxicationAttributeSet> IntoxicationAttribute;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Parameters|Data")
 	TObjectPtr<UDataTable> IntoxicationConfig;

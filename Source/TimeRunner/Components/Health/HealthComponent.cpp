@@ -8,8 +8,6 @@
 UHealthComponent::UHealthComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
-
-	HealthAttribute = CreateDefaultSubobject<UHealthAttributeSet>(TEXT("Health attribute"));
 }
 
 void UHealthComponent::InitializeComponent()
@@ -26,16 +24,12 @@ void UHealthComponent::BeginPlay()
 	Super::BeginPlay();
 
 	Owner = GetOwner<ABaseCharacter>();
-	if (Owner.IsValid())
-	{
-		Owner->OnTakeAnyDamage.AddDynamic(this, &UHealthComponent::TakePlayerDamage);
+	check(Owner.Get());
 
-		Owner->GetAbilitySystemComponent()->AddSpawnedAttribute(HealthAttribute);
-		if (InitData)
-		{
-			HealthAttribute->InitFromMetaDataTable(InitData);
-		}
-	}
+	Owner->OnTakeAnyDamage.AddDynamic(this, &UHealthComponent::TakePlayerDamage);
+
+	HealthAttribute = Owner->GetAbilitySystemComponent()->GetSet<UHealthAttributeSet>();
+	check(HealthAttribute);
 }
 
 void UHealthComponent::TakePlayerDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
@@ -46,7 +40,7 @@ void UHealthComponent::TakePlayerDamage(AActor* DamagedActor, float Damage, cons
 
 inline float UHealthComponent::GetMaxHP() const
 {
-	return 0; // HealthAttribute->GetMaxHealth();
+	return HealthAttribute->GetMaxHealth();
 }
 
 inline float UHealthComponent::GetCurrentHP() const

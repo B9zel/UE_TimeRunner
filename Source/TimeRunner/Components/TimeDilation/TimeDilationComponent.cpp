@@ -120,6 +120,12 @@ inline bool UTimeDilationComponent::GetIsTimeDilation() const
 	return m_IsTimeDilation;
 }
 
+float UTimeDilationComponent::GetCurrentDilationByEnum(const ELevelSpeed Speed) const
+{
+	auto* Dilation = m_Speeds.Find(Speed);
+	return Dilation != nullptr ? Dilation->Get()->GetSpeedActor() : -1.0f;
+}
+
 void UTimeDilationComponent::SetRunWorldTime(const float NewTime)
 {
 	m_RunWorldTime = FMath::Clamp(NewTime, 0.0f, 1.0f);

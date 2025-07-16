@@ -22,6 +22,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Global timer")
 	static FGlobalTimerHandle SetGlobalTimer(FGlobalTimerDelegate Delegate, const float Rate, const bool IsLoop = false);
 
-	UFUNCTION(BlueprintCallable, Category = "Global timer", meta = (DefaultToSelf = "Object"))
-	static void ClearGlobalTimer(UObject* Object, FGlobalTimerHandle Timer);
+	UFUNCTION(BlueprintCallable, Category = "Global timer", meta = (DefaultToSelf = "Object", WorldContext = "Object"))
+	static void ClearGlobalTimer(const UObject* Object, UPARAM(ref) FGlobalTimerHandle& Timer);
+
+	UFUNCTION(BlueprintPure, Category = "Global timer")
+	static bool IsValidTimer(FGlobalTimerHandle TimerHandle);
 };

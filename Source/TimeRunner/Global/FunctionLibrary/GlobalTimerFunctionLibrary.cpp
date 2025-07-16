@@ -22,7 +22,12 @@ FGlobalTimerHandle UGlobalTimerFunctionLibrary::SetGlobalTimer(FGlobalTimerDeleg
 	return FGlobalTimerHandle();
 }
 
-void UGlobalTimerFunctionLibrary::ClearGlobalTimer(UObject* Object, FGlobalTimerHandle Timer)
+bool UGlobalTimerFunctionLibrary::IsValidTimer(FGlobalTimerHandle TimerHandle)
+{
+	return TimerHandle.IsValid();
+}
+
+void UGlobalTimerFunctionLibrary::ClearGlobalTimer(const UObject* Object, FGlobalTimerHandle& Timer)
 {
 	if (!Timer.IsValid()) return;
 

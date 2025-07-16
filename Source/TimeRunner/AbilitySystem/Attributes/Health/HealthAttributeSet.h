@@ -16,17 +16,31 @@ class TIMERUNNER_API UHealthAttributeSet : public UBaseAttributeSet
 
 public:
 
-	ATTRIBUTE_ACCESSORS(UHealthAttributeSet, Health)
-	ATTRIBUTE_ACCESSORS(UHealthAttributeSet, MaxHealth)
+	UHealthAttributeSet();
 
 public:
+
+	ATTRIBUTE_ACCESSORS(UHealthAttributeSet, Health)
+	ATTRIBUTE_ACCESSORS(UHealthAttributeSet, MaxHealth)
+	ATTRIBUTE_ACCESSORS(UHealthAttributeSet, Damage)
+	ATTRIBUTE_ACCESSORS(UHealthAttributeSet, Healing)
+
+public:
+
+	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue);
 
 private:
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true", HideFromModifiers))
 	FGameplayAttributeData Health;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	FGameplayAttributeData MaxHealth;
+
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	FGameplayAttributeData Damage;
+
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	FGameplayAttributeData Healing;
 };

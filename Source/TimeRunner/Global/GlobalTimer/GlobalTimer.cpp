@@ -4,6 +4,8 @@
 
 static uint64 GeneratedTimerID = 1;
 
+DECLARE_LOG_CATEGORY_CLASS(GlobalTimerLog, All, All);
+
 void UGlobalTimer::StartGlobalTimer()
 {
 	if (UpdateTimer.IsValid()) return;
@@ -30,10 +32,18 @@ void UGlobalTimer::SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDele
 
 	Data.Delegate = MoveTemp(Delegate);
 	// UE_LOG(LogTemp, Display, TEXT("%s"), *Delegate.GetUObject()->GetName());
+	UE_LOG(GlobalTimerLog, Display, TEXT("Set timer"));
 
 	uint64 NewId = GenerateHadleID();
 	Handle.Id = NewId;
-	Timers.Add(NewId, MoveTemp(Data));
+	if (IsUpdatingTimer)
+	{
+		AddTimer.Add(NewId, MoveTemp(Data));
+	}
+	else
+	{
+		Timers.Add(NewId, MoveTemp(Data));
+	}
 	DeleteTimer.Remove(NewId);
 }
 
@@ -41,6 +51,8 @@ void UGlobalTimer::ClearTimer(FGlobalTimerHandle& Handle)
 {
 	if (Timers.Contains(Handle.Id))
 	{
+		UE_LOG(GlobalTimerLog, Display, TEXT("Clear timer"));
+		// Timers.Remove(Handle.Id);
 		DeleteTimer.AddUnique(Handle.Id);
 		Handle.Invalidate();
 	}
@@ -73,7 +85,21 @@ void UGlobalTimer::UpdateTimers()
 {
 	double Now = FPlatformTime::Seconds();
 	double Delta = GetWorld()->GetDeltaSeconds();
+	UE_LOG(GlobalTimerLog, Display, TEXT("Start UpdateTimer %d"), Timers.Num());
 
+	for (auto& Timer : AddTimer)
+	{
+		Timers.Emplace(Timer.Key, MoveTemp(Timer.Value));
+	}
+	AddTimer.Empty();
+
+	for (uint64 Handle : DeleteTimer)
+	{
+		Timers.Remove(Handle);
+	}
+	DeleteTimer.Empty();
+
+	IsUpdatingTimer = true;
 	for (auto& Timer : Timers)
 	{
 		GlobalTimerData& Value = Timer.Value;
@@ -100,11 +126,9 @@ void UGlobalTimer::UpdateTimers()
 			}
 		}
 	}
+	IsUpdatingTimer = false;
 
-	for (uint64 Handle : DeleteTimer)
-	{
-		Timers.Remove(Handle);
-	}
+	UE_LOG(GlobalTimerLog, Display, TEXT("Finish UpdateTimer %d"), Timers.Num());
 }
 
 void FGlobalUnifieldTimerDelegate::Execute()

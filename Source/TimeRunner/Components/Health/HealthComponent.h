@@ -56,6 +56,6 @@ private:
 	UPROPERTY()
 	TWeakObjectPtr<ABaseCharacter> Owner;
 
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<UHealthAttributeSet> HealthAttribute;
+	UPROPERTY()
+	TObjectPtr<const UHealthAttributeSet> HealthAttribute;
 };

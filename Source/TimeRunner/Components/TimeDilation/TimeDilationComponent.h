@@ -118,6 +118,9 @@ public:
 	inline float GetWalkWorldTime() const;
 
 	inline bool GetIsTimeDilation() const;
+	// @return Current dilation id it doesn't exist then -1.0f
+	UFUNCTION(BlueprintPure)
+	float GetCurrentDilationByEnum(const ELevelSpeed Speed) const;
 
 	// @param The range of input value is from 0 to 1
 	UFUNCTION(BlueprintCallable)

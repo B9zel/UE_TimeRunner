@@ -136,7 +136,10 @@ private:
 
 	TMap<uint64, GlobalTimerData> Timers;
 	TArray<uint64> DeleteTimer;
+	TMap<uint64, GlobalTimerData> AddTimer;
 	FTimerHandle UpdateTimer;
+
+	bool IsUpdatingTimer{false};
 };
 
 template <class UserClass>
