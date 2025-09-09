@@ -27,6 +27,11 @@ bool UGlobalTimerFunctionLibrary::IsValidTimer(FGlobalTimerHandle TimerHandle)
 	return TimerHandle.IsValid();
 }
 
+double UGlobalTimerFunctionLibrary::GetTotalSeconds()
+{
+	return FApp::GetCurrentTime();
+}
+
 void UGlobalTimerFunctionLibrary::ClearGlobalTimer(const UObject* Object, FGlobalTimerHandle& Timer)
 {
 	if (!Timer.IsValid()) return;

@@ -25,13 +25,18 @@ void UGlobalTimer::SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDele
 {
 	if (InRate < 0) return;
 
+	if (Handle.IsValid())
+	{
+		ClearTimer(Handle);
+	}
+
 	GlobalTimerData Data;
 	Data.IsLoop = InbLoop;
 	Data.Rate = InRate;
 	Data.LastTime = FPlatformTime::Seconds();
+	Data.Handler = &Handle;
 
 	Data.Delegate = MoveTemp(Delegate);
-	// UE_LOG(LogTemp, Display, TEXT("%s"), *Delegate.GetUObject()->GetName());
 	UE_LOG(GlobalTimerLog, Display, TEXT("Set timer"));
 
 	uint64 NewId = GenerateHadleID();
@@ -119,6 +124,7 @@ void UGlobalTimer::UpdateTimers()
 			if (!Value.IsLoop)
 			{
 				DeleteTimer.AddUnique(Timer.Key);
+				Value.Handler->Invalidate();
 			}
 			else
 			{

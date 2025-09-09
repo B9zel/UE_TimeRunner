@@ -14,32 +14,47 @@
 #include "AbilitySystemComponent.h"
 #include <GameplayTagContainer.h>
 #include <Components/ArrowComponent.h>
+#include <Global/GameInstance/MainGameInstance.h>
+#include <AbilitySystem/Attributes/Health/HealthAttributeSet.h>
+#include "Components/RunWall/RunWallComponent.h"
 
 ATimerRunnerCharacter::ATimerRunnerCharacter()
 {
-	ArrowDirectionComponent = CreateDefaultSubobject<UArrowComponent>(TEXT("ArrowDirection"));
+	ArrowDirectionComponent = CreateDefaultSubobject<UArrowComponent>("ArrowDirection");
 	ArrowDirectionComponent->SetupAttachment(GetRootComponent());
 
-	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
+	CameraComponent = CreateDefaultSubobject<UCameraComponent>("Camera");
 	CameraComponent->SetupAttachment(GetRootComponent());
 
-	SkeletonMeshUpBody = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Skeleton up body"));
+	SkeletonMeshUpBody = CreateDefaultSubobject<USkeletalMeshComponent>("Skeleton up body");
 	SkeletonMeshUpBody->SetupAttachment(CameraComponent);
 
-	KatanaMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Katana mesh"));
+	KatanaMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>("Katana mesh");
 	KatanaMeshComponent->SetupAttachment(SkeletonMeshUpBody);
 
-	HealthComponent = CreateDefaultSubobject<UHealthComponent>(TEXT("Health component"));
-	IntoxicationComponent = CreateDefaultSubobject<UIntoxicationComponent>(TEXT("Intoxication component"));
-	DilationComponent = CreateDefaultSubobject<UTimeDilationComponent>(TEXT("Dilation component"));
+	HealthComponent = CreateDefaultSubobject<UHealthComponent>("Health component");
+	IntoxicationComponent = CreateDefaultSubobject<UIntoxicationComponent>("Intoxication component");
+	DilationComponent = CreateDefaultSubobject<UTimeDilationComponent>("Dilation component");
+	RunWallComponent = CreateDefaultSubobject<URunWallComponent>("Wall run component");
 
 	check(HealthComponent);
 	check(IntoxicationComponent);
 	check(DilationComponent);
+	check(RunWallComponent);
 
 	GetCharacterMovement()->bNotifyApex = true;
-
 	m_IsInputMove = false;
+}
+
+void ATimerRunnerCharacter::PreRegisterAllComponents()
+{
+	Super::PreRegisterAllComponents();
+
+	FAttachmentTransformRules Rules(EAttachmentRule::KeepRelative, false);
+	KatanaMeshComponent->AttachToComponent(SkeletonMeshUpBody, Rules, SocketKatana);
+
+	RunWallComponent->SetArrowComponent(ArrowDirectionComponent);
+	RunWallComponent->ActivateRunWallDispatcher.AddDynamic(this, &ThisClass::OnActivetedRunWall);
 }
 
 void ATimerRunnerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -70,43 +85,8 @@ void ATimerRunnerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	Input->BindAction(InputObjects.SwitchSpeedActions, ETriggerEvent::Triggered, this, &ATimerRunnerCharacter::InputSwitchSpeedTriggerCharacter);
 	Input->BindAction(InputObjects.CrouchActions, ETriggerEvent::Started, this, &ATimerRunnerCharacter::InputCrouchStartCharacter);
 	Input->BindAction(InputObjects.AttackAction, ETriggerEvent::Started, this, &ATimerRunnerCharacter::InputAttackStartedCharacter);
-}
-
-void ATimerRunnerCharacter::Landed(const FHitResult& Hit)
-{
-	Super::Landed(Hit);
-
-	if (GetIsInputMove())
-	{
-		ApplyTimeDilation();
-	}
-}
-
-void ATimerRunnerCharacter::OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal, const FVector& PreviousFloorContactNormal,
-															 const FVector& PreviousLocation, float TimeDelta)
-{
-	Super::OnWalkingOffLedge_Implementation(PreviousFloorImpactNormal, PreviousFloorContactNormal, PreviousLocation, TimeDelta);
-
-	if (DilationComponent->GetIsTimeDilation())
-	{
-		ResetTimeDilation();
-		Launch(GetCharacterMovement()->Velocity.GetSafeNormal(), 0.0f);
-	}
-}
-
-void ATimerRunnerCharacter::PreRegisterAllComponents()
-{
-	Super::PreRegisterAllComponents();
-
-	FAttachmentTransformRules Rules(EAttachmentRule::KeepRelative, false);
-	KatanaMeshComponent->AttachToComponent(SkeletonMeshUpBody, Rules, SocketKatana);
-}
-
-void ATimerRunnerCharacter::NotifyJumpApex()
-{
-	Super::NotifyJumpApex();
-
-	GetCharacterMovement()->bNotifyApex = true;
+	Input->BindAction(InputObjects.StateBackAction, ETriggerEvent::Triggered, this, &ATimerRunnerCharacter::InputSafeStateBackTriggerCharacter);
+	Input->BindAction(InputObjects.DashAction, ETriggerEvent::Started, this, &ATimerRunnerCharacter::InputDashStartCharacter);
 }
 
 void ATimerRunnerCharacter::BeginPlay()
@@ -122,37 +102,44 @@ void ATimerRunnerCharacter::BeginPlay()
 void ATimerRunnerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	if (CanRunWall)
-	{
-		if (!CalculateCanRunWall(ResRight))
-		{
-			CanRunWall = false;
-			IsWallRunning = false;
-			GetAbilitySystemComponent()->CancelAbilities(&RunWallTagAbility);
-			GEngine->AddOnScreenDebugMessage(-1, 4.0f, FColor::Blue, FString::Printf(TEXT("Cancel run Ability")));
-		}
-		else if (!IsWallRunning)
-		{
-			GetAbilitySystemComponent()->TryActivateAbilitiesByTag(RunWallTagAbility);
-			IsWallRunning = true;
-			GEngine->AddOnScreenDebugMessage(-1, 4.0f, FColor::Blue, FString::Printf(TEXT("Apply run Ability")));
-		}
-		GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Blue, FString::Printf(TEXT("Check runAbility")));
-	}
 }
 
+void ATimerRunnerCharacter::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	if (GetIsInputMove())
+	{
+		Execute_ApplyTimeDilation(this);
+	}
+	Execute_StopRunWall(this, true);
+	WasDashInAir = false;
+}
+
+void ATimerRunnerCharacter::OnWalkingOffLedge_Implementation(const FVector& PreviousFloorImpactNormal, const FVector& PreviousFloorContactNormal,
+															 const FVector& PreviousLocation, float TimeDelta)
+{
+	Super::OnWalkingOffLedge_Implementation(PreviousFloorImpactNormal, PreviousFloorContactNormal, PreviousLocation, TimeDelta);
+
+	if (DilationComponent->GetIsTimeDilation())
+	{
+		Execute_ResetTimeDilation(this);
+	}
+	Execute_StopRunWall(this, false);
+}
+
+void ATimerRunnerCharacter::NotifyJumpApex()
+{
+	Super::NotifyJumpApex();
+
+	GetCharacterMovement()->bNotifyApex = true;
+}
+
+// Input begin
 void ATimerRunnerCharacter::InputRunTriggerCharacter(const FInputActionInstance& Instance)
 {
 	const FVector2D& Direction = Instance.GetValue().Get<FVector2D>();
-	if (Direction.X > 0)
-	{
-		DirectionRight = Direction.Y;
-	}
-	else
-	{
-		DirectionRight = 0.0f;
-	}
+	RunWallComponent->SetCurrentDirectionTrace(Direction.X > 0 ? Direction.Y : 0.0f);
 
 	AddMovementInput(GetActorForwardVector(), Direction.X);
 	AddMovementInput(GetActorRightVector(), Direction.Y);
@@ -163,14 +150,14 @@ void ATimerRunnerCharacter::InputRunStartCharacter(const FInputActionInstance& I
 	SetIsInputMove(true);
 	if (!GetCharacterMovement()->IsWalking() || GetCharacterMovement()->IsCrouching()) return;
 
-	ApplyTimeDilation();
+	Execute_ApplyTimeDilation(this);
 }
 
 void ATimerRunnerCharacter::InputRunCompletedCharacter(const FInputActionInstance& Instance)
 {
 	// if (UGameplayStatics::GetGlobalTimeDilation(this) != DilationComponent->GetRunWorldTime()) return;
 	SetIsInputMove(false);
-	ResetTimeDilation();
+	Execute_ResetTimeDilation(this);
 }
 
 void ATimerRunnerCharacter::InputLookCharacter(const FInputActionInstance& Instance)
@@ -183,24 +170,29 @@ void ATimerRunnerCharacter::InputLookCharacter(const FInputActionInstance& Insta
 
 void ATimerRunnerCharacter::InputJumpStartCharacter(const FInputActionInstance& Instance)
 {
-
-	if (CalculateCanRunWall(ResRight))
+	// Check is you have complete all the neccessary action
+	if (!RunWallComponent->GetIsWallRunning()) // CalculateCanRunWall(ResRight) &&
 	{
-		CanRunWall = true;
-		//	IsWallRunning = true;
-		// GetAbilitySystemComponent()->TryActivateAbilitiesByTag(RunWallTagAbility);
+		Execute_StartRunWall(this);
+		Jump();
 	}
-	else if (DilationComponent->GetIsTimeDilation())
-	{
-		ResetTimeDilation();
-		Launch(GetCharacterMovement()->Velocity.GetSafeNormal(), ZForceLaunch);
-	}
-	Jump();
-}
+	// else if (DilationComponent->GetIsTimeDilation() && !CanRunWall)
+	//{
+	//	Execute_ResetTimeDilation(this);
 
-void ATimerRunnerCharacter::InputJumpCompletedCharacter(const FInputActionInstance& Instance)
-{
-	StopJumping();
+	//	Launch(GetCharacterMovement()->Velocity.GetSafeNormal(), ZForceLaunch);
+	//}
+	// Jump off the wall
+	else if (RunWallComponent->GetCanWallRun() && RunWallComponent->GetIsWallRunning())
+	{
+		DrawDebugLine(GetWorld(), GetActorLocation(), GetActorLocation() + (GetActorForwardVector().RotateAngleAxis(45, FVector(0, 0, 1) * 200)), FColor::Blue,
+					  false, 10);
+
+		Execute_StopRunWall(this, false);
+		RunWallComponent->JumpOffWall();
+	}
+
+	Execute_ResetTimeDilation(this);
 }
 
 void ATimerRunnerCharacter::InputSwitchSpeedTriggerCharacter(const FInputActionInstance& Instance)
@@ -223,13 +215,13 @@ void ATimerRunnerCharacter::InputCrouchStartCharacter(const FInputActionInstance
 		UnCrouch();
 		if (GetIsInputMove() && !GetCharacterMovement()->IsFalling())
 		{
-			ApplyTimeDilation();
+			Execute_ApplyTimeDilation(this);
 		}
 	}
-	else if (!IsWallRunning)
+	else if (!RunWallComponent->GetIsWallRunning())
 	{
 		Crouch();
-		ResetTimeDilation();
+		Execute_ResetTimeDilation(this);
 	}
 }
 
@@ -247,37 +239,48 @@ void ATimerRunnerCharacter::InputAttackStartedCharacter(const FInputActionInstan
 	// GetWorld()->LineTraceMultiByChannel(HitRes, GetActorLocation(), GetActorLocation() + GEtForwardActorLOcation)
 }
 
-void ATimerRunnerCharacter::ApplyTimeDilation()
+void ATimerRunnerCharacter::InputStateBackCompleteCharacter(const FInputActionInstance& Instance)
 {
-	DilationComponent->EnableTimeDilation();
-	IntoxicationComponent->ActivateIntixication();
+	if (HasHoldSafeStateBackInput)
+	{
+		HasHoldSafeStateBackInput = false;
+		return;
+	}
+
+	if (Instance.GetElapsedTime() <= 0.1f)
+	{
+		GetAbilitySystemComponent()->TryActivateAbilitiesByTag(ApplyStateBackAbilityTag);
+	}
 }
 
-void ATimerRunnerCharacter::ResetTimeDilation()
+void ATimerRunnerCharacter::InputSafeStateBackTriggerCharacter(const FInputActionInstance& Instance)
 {
-	DilationComponent->DisableTimeDilation();
-	IntoxicationComponent->DeactivateIntixication();
+	StateBack = GetWasState();
+	IsSafeState = true;
+	HasHoldSafeStateBackInput = true;
 }
 
-bool ATimerRunnerCharacter::CalculateCanRunWall(FHitResult& Res)
+void ATimerRunnerCharacter::InputJumpCompletedCharacter(const FInputActionInstance& Instance)
 {
-	if (FMath::IsNearlyZero(GetVelocity().Size2D(), MinWallRunSpeed)) return false;
-
-	FVector Right = ArrowDirectionComponent->GetForwardVector() * DirectionRight;
-	TArray<AActor*> Ignore;
-	bool IsHit = UKismetSystemLibrary::LineTraceSingleForObjects(this, ArrowDirectionComponent->GetComponentLocation(),
-																 ArrowDirectionComponent->GetComponentLocation() + Right * LengthTraceRunWall, TypeChannelTrace,
-																 false, Ignore, EDrawDebugTrace::ForDuration, Res, true);
-
-	return IsHit;
+	StopJumping();
 }
 
-void ATimerRunnerCharacter::Launch(const FVector& Direction, const float ZForce)
+void ATimerRunnerCharacter::InputDashStartCharacter(const FInputActionInstance& Instance)
 {
-	FVector LocForceLaunch = Direction * ForceLaunch;
-	LocForceLaunch.Z += ZForce;
+	ActivateDash();
+}
 
-	LaunchCharacter(LocForceLaunch, true, true);
+// Input end
+
+void ATimerRunnerCharacter::ActivateDash()
+{
+	if (WasDashInAir) return;
+
+	GetAbilitySystemComponent()->TryActivateAbilitiesByTag(DashTagAbility);
+	if (GetCharacterMovement()->IsFalling())
+	{
+		WasDashInAir = true;
+	}
 }
 
 void ATimerRunnerCharacter::OnChangeLevelOfSpeed(const ELevelSpeed NewSpeed)
@@ -286,6 +289,37 @@ void ATimerRunnerCharacter::OnChangeLevelOfSpeed(const ELevelSpeed NewSpeed)
 	{
 		IntoxicationComponent->RestartIntoxication();
 	}
+}
+
+void ATimerRunnerCharacter::BPSetWasState_Implementation(const FStateBackStorage State)
+{
+	SetWasState(State);
+}
+
+void ATimerRunnerCharacter::StartRunWall_Implementation()
+{
+	RunWallComponent->StartRunWall();
+}
+
+void ATimerRunnerCharacter::StopRunWall_Implementation(const bool DisableCanWall)
+{
+	RunWallComponent->StopRunWall(DisableCanWall);
+}
+
+void ATimerRunnerCharacter::SetWasState(const FStateBackStorage& State)
+{
+	SetActorTransform(State.Transform);
+	GetAbilitySystemComponent()->SetNumericAttributeBase(UHealthAttributeSet::GetHealthAttribute(), State.Health);
+}
+
+void ATimerRunnerCharacter::StopWallRun_Timer()
+{
+	Execute_StopRunWall(this, false);
+}
+
+void ATimerRunnerCharacter::OnActivetedRunWall()
+{
+	WasDashInAir = false;
 }
 
 inline const FInput& ATimerRunnerCharacter::GetInputObject() const
@@ -301,4 +335,23 @@ bool ATimerRunnerCharacter::GetIsInputMove() const
 void ATimerRunnerCharacter::SetIsInputMove(const bool InputMove)
 {
 	m_IsInputMove = InputMove;
+}
+
+float ATimerRunnerCharacter::GetTimeActiveRunWall_Implementation()
+{
+	return RunWallComponent->GetTimeWallRun();
+}
+
+void ATimerRunnerCharacter::ApplyTimeDilation_Implementation()
+{
+	// GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Emerald, TEXT(__FUNCSIG__));
+	DilationComponent->EnableTimeDilation();
+	IntoxicationComponent->ActivateIntixication();
+}
+
+void ATimerRunnerCharacter::ResetTimeDilation_Implementation()
+{
+	// GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Magenta, TEXT(__FUNCSIG__));
+	DilationComponent->DisableTimeDilation();
+	IntoxicationComponent->DeactivateIntixication();
 }

@@ -27,4 +27,7 @@ public:
 
 	UFUNCTION(BlueprintPure, Category = "Global timer")
 	static bool IsValidTimer(FGlobalTimerHandle TimerHandle);
+
+	UFUNCTION(BlueprintPure, Category = "Time")
+	static double GetTotalSeconds();
 };

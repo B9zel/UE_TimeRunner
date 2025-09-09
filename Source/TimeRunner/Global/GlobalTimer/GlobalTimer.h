@@ -95,14 +95,17 @@ public:
 		Rate = Other.Rate;
 		LastTime = Other.LastTime;
 		IsLoop = Other.IsLoop;
+		Handler = Other.Handler;
 
 		Other.Delegate.UnBind();
 		Other.Rate = 0.0f;
 		Other.LastTime = 0.0f;
 		Other.IsLoop = false;
+		Other.Handler = nullptr;
 	}
 
 	FGlobalUnifieldTimerDelegate Delegate;
+	FGlobalTimerHandle* Handler;
 	float Rate;
 	double LastTime;
 	bool IsLoop;
@@ -122,9 +125,9 @@ public:
 	void StartGlobalTimer();
 	void StopGlobalTimer();
 
-	void SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDelegate Deligate, float InRate, bool InbLoop);
+	void SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDelegate Deligate, float InRate, bool InbLoop = false);
 	template <class UserClass>
-	void SetTimer(FGlobalTimerHandle& Handle, UserClass* Object, typename FTimerDelegate::TMethodPtr<UserClass> Method, float InRate, bool InbLoop);
+	void SetTimer(FGlobalTimerHandle& Handle, UserClass* Object, typename FTimerDelegate::TMethodPtr<UserClass> Method, float InRate, bool InbLoop = false);
 	void ClearTimer(FGlobalTimerHandle& Handle);
 
 private:
