@@ -21,17 +21,19 @@ void ABaseCharacter::PostInitializeComponents()
 	Super::PostInitializeComponents();
 
 	GetAbilitySystemComponent()->AddLooseGameplayTags(GameplayTags);
-}
 
-void ABaseCharacter::BeginPlay()
-{
-	Super::BeginPlay();
+	if (!PreStartAbilties) return;
 
 	for (auto& Ability : PreStartAbilties->Abilities)
 	{
 		FGameplayAbilitySpec Spec(Ability);
 		GetAbilitySystemComponent()->GiveAbility(Spec);
 	}
+}
+
+void ABaseCharacter::BeginPlay()
+{
+	Super::BeginPlay();
 
 	GetAbilitySystemComponent()->InitAbilityActorInfo(this, this);
 }

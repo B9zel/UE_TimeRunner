@@ -21,9 +21,9 @@ void UGlobalTimer::StopGlobalTimer()
 	GetWorld()->GetTimerManager().ClearTimer(UpdateTimer);
 }
 
-void UGlobalTimer::SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDelegate Delegate, float InRate, bool InbLoop)
+void UGlobalTimer::SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDelegate Delegate, float InRate, bool InbLoop, const bool MaxOncePerFrame)
 {
-	if (InRate < 0) return;
+	if (InRate <= 0) return;
 
 	if (Handle.IsValid())
 	{
@@ -34,6 +34,7 @@ void UGlobalTimer::SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDele
 	Data.IsLoop = InbLoop;
 	Data.Rate = InRate;
 	Data.LastTime = FPlatformTime::Seconds();
+	Data.OncePerFrame = MaxOncePerFrame;
 	Data.Handler = &Handle;
 
 	Data.Delegate = MoveTemp(Delegate);
@@ -49,7 +50,7 @@ void UGlobalTimer::SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDele
 	{
 		Timers.Add(NewId, MoveTemp(Data));
 	}
-	DeleteTimer.Remove(NewId);
+	DeleteTimers.Remove(NewId);
 }
 
 void UGlobalTimer::ClearTimer(FGlobalTimerHandle& Handle)
@@ -58,7 +59,7 @@ void UGlobalTimer::ClearTimer(FGlobalTimerHandle& Handle)
 	{
 		UE_LOG(GlobalTimerLog, Display, TEXT("Clear timer"));
 		// Timers.Remove(Handle.Id);
-		DeleteTimer.AddUnique(Handle.Id);
+		DeleteTimers.AddUnique(Handle.Id);
 		Handle.Invalidate();
 	}
 }
@@ -89,7 +90,7 @@ int64 UGlobalTimer::GenerateHadleID()
 void UGlobalTimer::UpdateTimers()
 {
 	double Now = FPlatformTime::Seconds();
-	double Delta = GetWorld()->GetDeltaSeconds();
+	;
 	UE_LOG(GlobalTimerLog, Display, TEXT("Start UpdateTimer %d"), Timers.Num());
 
 	for (auto& Timer : AddTimer)
@@ -98,32 +99,37 @@ void UGlobalTimer::UpdateTimers()
 	}
 	AddTimer.Empty();
 
-	for (uint64 Handle : DeleteTimer)
+	for (uint64 Handle : DeleteTimers)
 	{
 		Timers.Remove(Handle);
 	}
-	DeleteTimer.Empty();
+	DeleteTimers.Empty();
 
 	IsUpdatingTimer = true;
 	for (auto& Timer : Timers)
 	{
 		GlobalTimerData& Value = Timer.Value;
-
-		if (Value.Rate <= (Now - Value.LastTime))
+		const double Delta = Now - Value.LastTime;
+		
+		if (Value.Rate <= Delta)
 		{
 			if (!Value.Delegate.IsBound())
 			{
-				DeleteTimer.AddUnique(Timer.Key);
+				DeleteTimers.AddUnique(Timer.Key);
+				Value.Handler->Invalidate();
 				continue;
 			}
-			else
+			// Execute
+			const int32 CountExecute = (Value.OncePerFrame || !Value.IsLoop) ? 1 : (Delta / Value.Rate);
+			for (int32 i = 0; i < CountExecute; ++i)
 			{
 				Value.Delegate.Execute();
 			}
+			// Execute
 
 			if (!Value.IsLoop)
 			{
-				DeleteTimer.AddUnique(Timer.Key);
+				DeleteTimers.AddUnique(Timer.Key);
 				Value.Handler->Invalidate();
 			}
 			else

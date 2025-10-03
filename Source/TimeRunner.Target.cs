@@ -10,8 +10,8 @@ public class TimeRunnerTarget : TargetRules
     public TimeRunnerTarget(TargetInfo Target) : base(Target)
     {
         Type = TargetType.Game;
-        DefaultBuildSettings = BuildSettingsVersion.V5;
-        IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
+        DefaultBuildSettings = BuildSettingsVersion.Latest;
+        IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_6;
         ExtraModuleNames.Add("TimeRunner");
     }
 }

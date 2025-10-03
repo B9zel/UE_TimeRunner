@@ -20,7 +20,7 @@ class TIMERUNNER_API UGlobalTimerFunctionLibrary : public UBlueprintFunctionLibr
 public:
 
 	UFUNCTION(BlueprintCallable, Category = "Global timer")
-	static FGlobalTimerHandle SetGlobalTimer(FGlobalTimerDelegate Delegate, const float Rate, const bool IsLoop = false);
+	static FGlobalTimerHandle SetGlobalTimer(FGlobalTimerDelegate Delegate, const float Rate, const bool IsLoop = false, const bool MaxOncePerFrame = false);
 
 	UFUNCTION(BlueprintCallable, Category = "Global timer", meta = (DefaultToSelf = "Object", WorldContext = "Object"))
 	static void ClearGlobalTimer(const UObject* Object, UPARAM(ref) FGlobalTimerHandle& Timer);

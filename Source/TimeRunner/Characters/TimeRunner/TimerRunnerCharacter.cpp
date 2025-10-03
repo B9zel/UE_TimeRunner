@@ -17,6 +17,7 @@
 #include <Global/GameInstance/MainGameInstance.h>
 #include <AbilitySystem/Attributes/Health/HealthAttributeSet.h>
 #include "Components/RunWall/RunWallComponent.h"
+#include "Components/Countermotion/CountermotionComponent.h"
 
 ATimerRunnerCharacter::ATimerRunnerCharacter()
 {
@@ -36,11 +37,13 @@ ATimerRunnerCharacter::ATimerRunnerCharacter()
 	IntoxicationComponent = CreateDefaultSubobject<UIntoxicationComponent>("Intoxication component");
 	DilationComponent = CreateDefaultSubobject<UTimeDilationComponent>("Dilation component");
 	RunWallComponent = CreateDefaultSubobject<URunWallComponent>("Wall run component");
+	CountermotionComponent = CreateDefaultSubobject<UCountermotionComponent>("Countermotion component");
 
 	check(HealthComponent);
 	check(IntoxicationComponent);
 	check(DilationComponent);
 	check(RunWallComponent);
+	check(CountermotionComponent);
 
 	GetCharacterMovement()->bNotifyApex = true;
 	m_IsInputMove = false;
@@ -54,7 +57,7 @@ void ATimerRunnerCharacter::PreRegisterAllComponents()
 	KatanaMeshComponent->AttachToComponent(SkeletonMeshUpBody, Rules, SocketKatana);
 
 	RunWallComponent->SetArrowComponent(ArrowDirectionComponent);
-	RunWallComponent->ActivateRunWallDispatcher.AddDynamic(this, &ThisClass::OnActivetedRunWall);
+	RunWallComponent->ActivateRunWallDispatcher.AddUniqueDynamic(this, &ThisClass::OnActivetedRunWall);
 }
 
 void ATimerRunnerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -85,7 +88,7 @@ void ATimerRunnerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	Input->BindAction(InputObjects.SwitchSpeedActions, ETriggerEvent::Triggered, this, &ATimerRunnerCharacter::InputSwitchSpeedTriggerCharacter);
 	Input->BindAction(InputObjects.CrouchActions, ETriggerEvent::Started, this, &ATimerRunnerCharacter::InputCrouchStartCharacter);
 	Input->BindAction(InputObjects.AttackAction, ETriggerEvent::Started, this, &ATimerRunnerCharacter::InputAttackStartedCharacter);
-	Input->BindAction(InputObjects.StateBackAction, ETriggerEvent::Triggered, this, &ATimerRunnerCharacter::InputSafeStateBackTriggerCharacter);
+	Input->BindAction(InputObjects.OldestStateAction, ETriggerEvent::Started, this, &ATimerRunnerCharacter::InputOldestBackStartCharacter);
 	Input->BindAction(InputObjects.DashAction, ETriggerEvent::Started, this, &ATimerRunnerCharacter::InputDashStartCharacter);
 }
 
@@ -239,25 +242,9 @@ void ATimerRunnerCharacter::InputAttackStartedCharacter(const FInputActionInstan
 	// GetWorld()->LineTraceMultiByChannel(HitRes, GetActorLocation(), GetActorLocation() + GEtForwardActorLOcation)
 }
 
-void ATimerRunnerCharacter::InputStateBackCompleteCharacter(const FInputActionInstance& Instance)
+void ATimerRunnerCharacter::InputOldestBackStartCharacter(const FInputActionInstance& Instance)
 {
-	if (HasHoldSafeStateBackInput)
-	{
-		HasHoldSafeStateBackInput = false;
-		return;
-	}
-
-	if (Instance.GetElapsedTime() <= 0.1f)
-	{
-		GetAbilitySystemComponent()->TryActivateAbilitiesByTag(ApplyStateBackAbilityTag);
-	}
-}
-
-void ATimerRunnerCharacter::InputSafeStateBackTriggerCharacter(const FInputActionInstance& Instance)
-{
-	StateBack = GetWasState();
-	IsSafeState = true;
-	HasHoldSafeStateBackInput = true;
+	GetAbilitySystemComponent()->TryActivateAbilitiesByTag(ApplyOldestStateAbilityTag);
 }
 
 void ATimerRunnerCharacter::InputJumpCompletedCharacter(const FInputActionInstance& Instance)
@@ -291,10 +278,6 @@ void ATimerRunnerCharacter::OnChangeLevelOfSpeed(const ELevelSpeed NewSpeed)
 	}
 }
 
-void ATimerRunnerCharacter::BPSetWasState_Implementation(const FStateBackStorage State)
-{
-	SetWasState(State);
-}
 
 void ATimerRunnerCharacter::StartRunWall_Implementation()
 {
@@ -306,10 +289,16 @@ void ATimerRunnerCharacter::StopRunWall_Implementation(const bool DisableCanWall
 	RunWallComponent->StopRunWall(DisableCanWall);
 }
 
-void ATimerRunnerCharacter::SetWasState(const FStateBackStorage& State)
+void ATimerRunnerCharacter::SetOldestState(const FCountermotionData& Data)
+{	
+	SetActorLocation(Data.Location);
+	GetController()->SetControlRotation(Data.Rotation);
+	GetAbilitySystemComponent()->SetNumericAttributeBase(UHealthAttributeSet::GetHealthAttribute(), Data.Health);
+}
+
+void ATimerRunnerCharacter::BPSetOldestState_Implementation(const FCountermotionData& Data)
 {
-	SetActorTransform(State.Transform);
-	GetAbilitySystemComponent()->SetNumericAttributeBase(UHealthAttributeSet::GetHealthAttribute(), State.Health);
+	SetOldestState(Data);
 }
 
 void ATimerRunnerCharacter::StopWallRun_Timer()

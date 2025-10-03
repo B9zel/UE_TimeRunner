@@ -19,6 +19,7 @@ class UIntoxicationComponent;
 class UHealthComponent;
 class UTimeDilationComponent;
 class URunWallComponent;
+class UCountermotionComponent;
 struct FInputActionInstance;
 
 USTRUCT(BlueprintType)
@@ -41,7 +42,7 @@ public:
 	UPROPERTY(EditAnywhere, meta = (Categories = "Input"))
 	UInputAction* AttackAction;
 	UPROPERTY(EditAnywhere, meta = (Categories = "Input"))
-	UInputAction* StateBackAction;
+	UInputAction* OldestStateAction;
 	UPROPERTY(EditAnywhere, meta = (Categories = "Input"))
 	UInputAction* DashAction;
 
@@ -65,8 +66,8 @@ public:
 	virtual void NotifyJumpApex() override;
 
 	// IStateBackInterface begin
-	virtual void SetWasState(const FStateBackStorage& State) override;
-	void BPSetWasState_Implementation(const FStateBackStorage State);
+	virtual void SetOldestState(const FCountermotionData& Data) override;
+	void BPSetOldestState_Implementation(const FCountermotionData& Data);
 	// IStateBackInterface end
 
 	// IWallRunInterface begin
@@ -100,8 +101,7 @@ protected:
 	void InputSwitchSpeedTriggerCharacter(const FInputActionInstance& Instance);
 	void InputCrouchStartCharacter(const FInputActionInstance& Instance);
 	void InputAttackStartedCharacter(const FInputActionInstance& Instance);
-	void InputSafeStateBackTriggerCharacter(const FInputActionInstance& Instance);
-	void InputStateBackCompleteCharacter(const FInputActionInstance& Instance);
+	void InputOldestBackStartCharacter(const FInputActionInstance& Instance);
 	void InputDashStartCharacter(const FInputActionInstance& Instance);
 
 	void Attack();
@@ -137,14 +137,18 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<URunWallComponent> RunWallComponent;
 
-	// Custom begin
+	// Custom components begin
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UHealthComponent> HealthComponent;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UIntoxicationComponent> IntoxicationComponent;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UTimeDilationComponent> DilationComponent;
-	// Castom end
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UCountermotionComponent> CountermotionComponent;
+
+
+	// Castom components end
 
 	//  Component end
 	UPROPERTY(EditAnywhere, meta = (Category = "Parameters|Input"))
@@ -165,7 +169,7 @@ protected:
 	FName SocketKatana;
 
 	UPROPERTY(EditAnywhere, meta = (Category = "Parameters|StateBack"))
-	FGameplayTagContainer ApplyStateBackAbilityTag;
+	FGameplayTagContainer ApplyOldestStateAbilityTag;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Parameters|Dash", meta = (ClampMin = "0"))
 	float DurationDash;
@@ -184,11 +188,6 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Parameters|Dash|Tag")
 	FGameplayTagContainer DashTagAbility;
 
-	FStateBackStorage StateBack;
-	bool IsSafeState{false};
-	bool HasHoldSafeStateBackInput{false};
-
 	bool WasDashInAir{false};
-
 	bool m_IsInputMove;
 };

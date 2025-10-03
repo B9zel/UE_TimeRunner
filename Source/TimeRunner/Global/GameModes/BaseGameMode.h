@@ -23,5 +23,5 @@ protected:
 	TSubclassOf<UBulletPool> BulletPoolClass;
 
 	UPROPERTY()
-	UBulletPool* BulletPool;
+	TObjectPtr<UBulletPool> BulletPool;
 };

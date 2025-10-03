@@ -4,8 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include <Data/Structs/StateBackStorage.h>
+
 #include "StateBackInterface.generated.h"
+
+struct FCountermotionData;
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
@@ -24,11 +26,8 @@ class TIMERUNNER_API IStateBackInterface
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 
-	virtual const FStateBackStorage GetWasState() const;
-	UFUNCTION(BlueprintImplementableEvent)
-	FStateBackStorage BPGetWasState() const;
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void BPSetWasState(const FStateBackStorage State);
+	void BPSetOldestState(const FCountermotionData& Data);
 
-	virtual void SetWasState(const FStateBackStorage& State) = 0;
+	virtual void SetOldestState(const FCountermotionData& Data) = 0;
 };

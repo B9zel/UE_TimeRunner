@@ -9,8 +9,9 @@ public class TimeRunnerEditorTarget : TargetRules
     public TimeRunnerEditorTarget(TargetInfo Target) : base(Target)
     {
         Type = TargetType.Editor;
-        DefaultBuildSettings = BuildSettingsVersion.V5;
+        DefaultBuildSettings = BuildSettingsVersion.Latest;
         IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
+        CppStandard = CppStandardVersion.Cpp20;
         ExtraModuleNames.Add("TimeRunner");
     }
 }

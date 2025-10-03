@@ -3,7 +3,8 @@
 #include "Global/FunctionLibrary/GlobalTimerFunctionLibrary.h"
 #include "Global/GameInstance/MainGameInstance.h"
 
-FGlobalTimerHandle UGlobalTimerFunctionLibrary::SetGlobalTimer(FGlobalTimerDelegate Delegate, const float Rate, const bool IsLoop /*= false*/)
+FGlobalTimerHandle UGlobalTimerFunctionLibrary::SetGlobalTimer(FGlobalTimerDelegate Delegate, const float Rate, const bool IsLoop /*= false*/, 
+															   const bool MaxOncePerFrame /* = false */)
 {
 	if (!Delegate.IsBound()) return FGlobalTimerHandle();
 
@@ -15,7 +16,7 @@ FGlobalTimerHandle UGlobalTimerFunctionLibrary::SetGlobalTimer(FGlobalTimerDeleg
 	{
 		FGlobalTimerHandle NewHandle;
 		UE_LOG(LogTemp, Display, TEXT("%s"), *Delegate.GetUObject()->GetName());
-		GameInstance->GetGlobalTimer()->SetTimer(NewHandle, Delegate, Rate, IsLoop);
+		GameInstance->GetGlobalTimer()->SetTimer(NewHandle, Delegate, Rate, IsLoop, MaxOncePerFrame);
 
 		return NewHandle;
 	}

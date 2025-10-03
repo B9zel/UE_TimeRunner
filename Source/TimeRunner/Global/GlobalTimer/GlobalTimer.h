@@ -106,9 +106,10 @@ public:
 
 	FGlobalUnifieldTimerDelegate Delegate;
 	FGlobalTimerHandle* Handler;
-	float Rate;
-	double LastTime;
-	bool IsLoop;
+	float Rate{0.0f};
+	double LastTime{0.0};
+	bool IsLoop{false};
+	bool OncePerFrame{false};
 };
 
 UCLASS()
@@ -125,7 +126,7 @@ public:
 	void StartGlobalTimer();
 	void StopGlobalTimer();
 
-	void SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDelegate Deligate, float InRate, bool InbLoop = false);
+	void SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDelegate Deligate, float InRate, bool InbLoop = false, const bool MaxOncePerFrame=false);
 	template <class UserClass>
 	void SetTimer(FGlobalTimerHandle& Handle, UserClass* Object, typename FTimerDelegate::TMethodPtr<UserClass> Method, float InRate, bool InbLoop = false);
 	void ClearTimer(FGlobalTimerHandle& Handle);
@@ -138,7 +139,7 @@ private:
 private:
 
 	TMap<uint64, GlobalTimerData> Timers;
-	TArray<uint64> DeleteTimer;
+	TArray<uint64> DeleteTimers;
 	TMap<uint64, GlobalTimerData> AddTimer;
 	FTimerHandle UpdateTimer;
 

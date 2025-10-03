@@ -12,6 +12,7 @@ ABaseWeapon::ABaseWeapon()
 
 void ABaseWeapon::Attack_Implementation()
 {
+	
 }
 
 void ABaseWeapon::StopAttack_Implementation()

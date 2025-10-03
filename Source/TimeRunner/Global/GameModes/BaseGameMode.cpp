@@ -13,7 +13,7 @@ void ABaseGameMode::BeginPlay()
 		GameInstance->StartGlobalTimer();
 	}
 
-	if (BulletPoolClass.Get())
+	if (BulletPoolClass)
 	{
 		BulletPool = NewObject<UBulletPool>(this, BulletPoolClass);
 		check(BulletPool);

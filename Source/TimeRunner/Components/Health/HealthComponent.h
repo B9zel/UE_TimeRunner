@@ -58,4 +58,13 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<const UHealthAttributeSet> HealthAttribute;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float ScaleRunHealing;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
+	float ScaleIdleHealing;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", Units = "s", ClampMin = "0.001"))
+	float RateHealing;
 };
