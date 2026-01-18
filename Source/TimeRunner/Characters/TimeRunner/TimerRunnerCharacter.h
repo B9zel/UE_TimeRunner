@@ -20,6 +20,7 @@ class UHealthComponent;
 class UTimeDilationComponent;
 class URunWallComponent;
 class UCountermotionComponent;
+class UDamageAttributeSet;
 struct FInputActionInstance;
 
 USTRUCT(BlueprintType)
@@ -159,7 +160,7 @@ protected:
 	// Uproperty variables begin
 
 	UPROPERTY(EditAnywhere, meta = (Category = "Parameters|Attack", ClampMin = "0.0"))
-	float Damage;
+	TObjectPtr<const UDamageAttributeSet> Damage;
 	UPROPERTY(EditAnywhere, meta = (Category = "Parameters|Attack", ClampMin = "0.0"))
 	float DistanceAttack;
 	UPROPERTY(EditAnywhere, meta = (Category = "Parameters|Attack"))
@@ -190,4 +191,5 @@ private:
 
 	bool WasDashInAir{false};
 	bool m_IsInputMove;
+
 };

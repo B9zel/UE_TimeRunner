@@ -18,6 +18,7 @@
 #include <AbilitySystem/Attributes/Health/HealthAttributeSet.h>
 #include "Components/RunWall/RunWallComponent.h"
 #include "Components/Countermotion/CountermotionComponent.h"
+#include "AbilitySystem/Attributes/Damage/DamageAttributeSet.h"
 
 ATimerRunnerCharacter::ATimerRunnerCharacter()
 {
@@ -238,8 +239,12 @@ void ATimerRunnerCharacter::InputAttackStartedCharacter(const FInputActionInstan
 	// GetWorld()->LineTraceMultiByChannel(HitRes, GetActorLocation(), GetActorLocation() + GetActorForwardVector() * DistanceAttack, ChannelAttack);
 	for (auto& Hit : HitRes)
 	{
+
+		FGameplayEventData EventData;
+		EventData.Target = Hit.GetActor();
+		EventData.EventMagnitude = Damage ? Damage->GetDamage() : 0.0f;
+		GetAbilitySystemComponent()->HandleGameplayEvent(EventApplyDamage, &EventData);
 	}
-	// GetWorld()->LineTraceMultiByChannel(HitRes, GetActorLocation(), GetActorLocation() + GEtForwardActorLOcation)
 }
 
 void ATimerRunnerCharacter::InputOldestBackStartCharacter(const FInputActionInstance& Instance)

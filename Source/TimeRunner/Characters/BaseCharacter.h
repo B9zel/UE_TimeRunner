@@ -32,6 +32,11 @@ protected:
 
 	virtual void BeginPlay() override;
 
+protected:
+
+	UPROPERTY(EditAnywhere, Category = "Parameters|Attack")
+	FGameplayTag EventApplyDamage;
+
 private:
 
 	UPROPERTY(EditAnywhere)

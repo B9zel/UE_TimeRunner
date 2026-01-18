@@ -4,11 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "GameplayEffectTypes.h"
+
 #include "HealthComponent.generated.h"
 
 class UHealthAttributeSet;
-
 class ABaseCharacter;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FHealthChangeDelegate,AActor*, Instigate, const float, OldValue, const float, NewValue);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDeadDelegate, AActor*, Instigate);
+
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class TIMERUNNER_API UHealthComponent : public UActorComponent
@@ -33,14 +38,26 @@ public:
 	// UFUNCTION(BlueprintCallable)
 	// void SetCurrentHP(const float NewHealt);
 
+
 protected:
 
 	virtual void BeginPlay() override;
+	virtual void TakeAbilityDamage(AActor* Instigator, const float OldValue, const float NewValue);
 
 private:
 
 	UFUNCTION()
 	void TakePlayerDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
+	UFUNCTION()
+	virtual void OnChangeHealth(AActor* Instigator, const float OldValue, const float NewValue);
+
+public:
+
+	UPROPERTY(BlueprintAssignable)
+	FHealthChangeDelegate ChangeHealth;
+
+	UPROPERTY(BlueprintAssignable)
+	FDeadDelegate Dead;
 
 protected:
 

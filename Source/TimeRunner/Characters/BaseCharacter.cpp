@@ -26,8 +26,15 @@ void ABaseCharacter::PostInitializeComponents()
 
 	for (auto& Ability : PreStartAbilties->Abilities)
 	{
-		FGameplayAbilitySpec Spec(Ability);
-		GetAbilitySystemComponent()->GiveAbility(Spec);
+		FGameplayAbilitySpec Spec(Ability.Ability);
+		if (Ability.IsAutoActivate)
+		{
+			GetAbilitySystemComponent()->GiveAbilityAndActivateOnce(Spec);
+		}
+		else
+		{
+			GetAbilitySystemComponent()->GiveAbility(Spec);
+		}
 	}
 }
 

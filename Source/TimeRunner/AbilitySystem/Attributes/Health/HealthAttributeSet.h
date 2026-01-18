@@ -9,6 +9,8 @@
 
 class UAbilitySystemComponent;
 
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FChangeHealth,AActor*, const float, const float)
+
 UCLASS()
 class TIMERUNNER_API UHealthAttributeSet : public UBaseAttributeSet
 {
@@ -22,14 +24,18 @@ public:
 
 	ATTRIBUTE_ACCESSORS(UHealthAttributeSet, Health)
 	ATTRIBUTE_ACCESSORS(UHealthAttributeSet, MaxHealth)
-	ATTRIBUTE_ACCESSORS(UHealthAttributeSet, Damage)
+	ATTRIBUTE_ACCESSORS(UHealthAttributeSet, AppliedDamage)
 	ATTRIBUTE_ACCESSORS(UHealthAttributeSet, Healing)
 
 public:
 
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 
-	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue);
+	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
+
+public:
+
+	mutable FChangeHealth ChangeHealth;
 
 private:
 
@@ -39,7 +45,7 @@ private:
 	FGameplayAttributeData MaxHealth;
 
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	FGameplayAttributeData Damage;
+	FGameplayAttributeData AppliedDamage;
 
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	FGameplayAttributeData Healing;

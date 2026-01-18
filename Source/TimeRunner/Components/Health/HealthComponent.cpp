@@ -30,12 +30,29 @@ void UHealthComponent::BeginPlay()
 
 	HealthAttribute = Owner->GetAbilitySystemComponent()->GetSet<UHealthAttributeSet>();
 	check(HealthAttribute);
+
+	HealthAttribute->ChangeHealth.AddUObject(this, &ThisClass::OnChangeHealth);
+
+}
+
+void UHealthComponent::TakeAbilityDamage(AActor* Instigator, const float OldValue, const float NewValue)
+{
+	ChangeHealth.Broadcast(Instigator, OldValue, NewValue);
 }
 
 void UHealthComponent::TakePlayerDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
 {
 
 	// m_CurrentHP = FMath::Clamp(m_CurrentHP - Damage, 0.0f, m_MaxHP);
+}
+
+void UHealthComponent::OnChangeHealth(AActor* Instigator, const float OldValue, const float NewValue)
+{
+	ChangeHealth.Broadcast(Instigator, OldValue, NewValue);
+	if (FMath::IsNearlyZero(NewValue))
+	{
+		Dead.Broadcast(Instigator);
+	}
 }
 
 inline float UHealthComponent::GetMaxHP() const

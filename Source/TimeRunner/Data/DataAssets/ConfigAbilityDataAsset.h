@@ -7,6 +7,21 @@
 #include <Abilities/GameplayAbility.h>
 #include "ConfigAbilityDataAsset.generated.h"
 
+
+USTRUCT()
+struct FGameplayAbilitySpecData
+{
+	GENERATED_BODY()
+
+public:
+
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UGameplayAbility> Ability;
+	
+	UPROPERTY(EditAnywhere)
+	bool IsAutoActivate = false;
+};
+
 /**
  *
  */
@@ -18,5 +33,5 @@ class TIMERUNNER_API UConfigAbilityDataAsset : public UPrimaryDataAsset
 public:
 
 	UPROPERTY(EditAnywhere)
-	TArray<TSubclassOf<UGameplayAbility>> Abilities;
+	TArray<FGameplayAbilitySpecData> Abilities;
 };
