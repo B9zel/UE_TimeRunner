@@ -4,6 +4,7 @@
 #include <Components/SphereComponent.h>
 #include <Components/StaticMeshComponent.h>
 #include <Components/BoxComponent.h>
+#include "AbilitySystemComponent.h"
 
 ABaseTurret::ABaseTurret()
 {
@@ -17,6 +18,8 @@ ABaseTurret::ABaseTurret()
 	check(MeshRotation);
 	MeshRotation->SetupAttachment(SphereCollision);
 
+	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("Ability system component"));
+
 	RateRotation = 0.001f;
 }
 
@@ -26,4 +29,9 @@ void ABaseTurret::BeginPlay()
 
 	SphereCollision->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnBeginOverlap);
 	SphereCollision->OnComponentEndOverlap.AddDynamic(this, &ThisClass::OnEndOverlap);
+}
+
+UAbilitySystemComponent* ABaseTurret::GetAbilitySystemComponent() const
+{
+	return AbilitySystem;
 }

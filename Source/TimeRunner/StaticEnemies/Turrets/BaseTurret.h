@@ -4,14 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "AbilitySystemInterface.h"
 #include "BaseTurret.generated.h"
 
 class USphereComponent;
 class UStaticMeshComponent;
+class UAbilitySystemComponent;
 class UBoxComponent;
 
 UCLASS(Abstract)
-class TIMERUNNER_API ABaseTurret : public AActor
+class TIMERUNNER_API ABaseTurret : public AActor, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -22,6 +24,7 @@ public:
 public:
 
 	virtual void BeginPlay() override;
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 protected:
 
@@ -38,7 +41,7 @@ protected:
 	USphereComponent* SphereCollision;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* MeshRotation;
-	UPROPERTY(EditAnywhere, meta = (ClampMin = "0.0"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0.0"))
 	float Damage;
 	UPROPERTY(EditAnywhere, meta = (ClampMin = 0.0, Units = "s"))
 	float RateRotation;
@@ -49,4 +52,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = 0.0))
 	float DistanceAttack;
+
+	UPROPERTY(EditAnywhere)
+	UAbilitySystemComponent* AbilitySystem;
 };

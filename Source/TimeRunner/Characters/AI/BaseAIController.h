@@ -4,14 +4,32 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+#include "Characters/AI/AIGeneral.h"
 #include "BaseAIController.generated.h"
 
+class UStateTreeAIComponent;
 /**
- * 
+ *
  */
 UCLASS()
 class TIMERUNNER_API ABaseAIController : public AAIController
 {
 	GENERATED_BODY()
-	
+
+public:
+
+	ABaseAIController();
+
+protected:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	EStateEnemy State;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TObjectPtr<UStateTreeAIComponent> StateTreeComponent;
+
+private:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
+	FVector NextPatrolPoint;
 };

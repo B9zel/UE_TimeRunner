@@ -11,9 +11,8 @@
 class UHealthAttributeSet;
 class ABaseCharacter;
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FHealthChangeDelegate,AActor*, Instigate, const float, OldValue, const float, NewValue);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FHealthChangeDelegate, AActor*, Instigate, const float, OldValue, const float, NewValue);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDeadDelegate, AActor*, Instigate);
-
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class TIMERUNNER_API UHealthComponent : public UActorComponent
@@ -27,17 +26,10 @@ public:
 
 public:
 
-	virtual void InitializeComponent() override;
 	UFUNCTION(BlueprintPure)
 	inline float GetMaxHP() const;
 	UFUNCTION(BlueprintPure)
 	inline float GetCurrentHP() const;
-
-	// UFUNCTION(BlueprintCallable)
-	// void SetMaxHP(const float NewMax);
-	// UFUNCTION(BlueprintCallable)
-	// void SetCurrentHP(const float NewHealt);
-
 
 protected:
 
@@ -46,8 +38,6 @@ protected:
 
 private:
 
-	UFUNCTION()
-	void TakePlayerDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 	UFUNCTION()
 	virtual void OnChangeHealth(AActor* Instigator, const float OldValue, const float NewValue);
 
@@ -59,29 +49,20 @@ public:
 	UPROPERTY(BlueprintAssignable)
 	FDeadDelegate Dead;
 
-protected:
-
-	UPROPERTY(EditAnywhere)
-	UDataTable* InitData;
-
 private:
 
-	/*UPROPERTY(EditAnywhere, meta = (ClampMin = "0.0"))
-	float m_MaxHP;
 	UPROPERTY()
-	float m_CurrentHP;*/
-	UPROPERTY()
-	TWeakObjectPtr<ABaseCharacter> Owner;
+	TWeakObjectPtr<AActor> Owner;
 
 	UPROPERTY()
 	TObjectPtr<const UHealthAttributeSet> HealthAttribute;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
 	float ScaleRunHealing;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", ClampMin = "0.0"))
 	float ScaleIdleHealing;
-	
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true", Units = "s", ClampMin = "0.001"))
 	float RateHealing;
 };

@@ -9,6 +9,10 @@
 ABaseBullet::ABaseBullet()
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	BoxCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("Collision bullet"));
+	check(BoxCollision);
+	SetRootComponent(BoxCollision);
 }
 
 void ABaseBullet::DisableObject()
@@ -29,16 +33,5 @@ void ABaseBullet::BeginPlay()
 {
 	Super::BeginPlay();
 
-	BoxCollision->OnComponentBeginOverlap.AddDynamic(this, &ThisClass::OnBeginOverlap);
 	LastTypeCollsion = BoxCollision->GetCollisionEnabled();
-}
-
-void ABaseBullet::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
-								 bool bFromSweep, const FHitResult& SweepResult)
-{
-	if (OtherActor->IsA(ATimerRunnerCharacter::StaticClass()))
-	{
-		UGameplayStatics::ApplyPointDamage(OtherActor, Damage, GetActorForwardVector(), SweepResult, GetInstigatorController(), this,
-										   TSubclassOf<UDamageType>());
-	}
 }

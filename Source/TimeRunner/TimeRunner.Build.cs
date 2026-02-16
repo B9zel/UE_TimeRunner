@@ -4,32 +4,32 @@ using UnrealBuildTool;
 
 public class TimeRunner : ModuleRules
 {
-    public TimeRunner(ReadOnlyTargetRules Target) : base(Target)
-    {
-        PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
+	public TimeRunner(ReadOnlyTargetRules Target) : base(Target)
+	{
+		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "GameplayAbilities", "GameplayTags", "GameplayTasks" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "GameplayAbilities", "GameplayTags",
+															"GameplayTasks", "StateTreeModule", "GameplayStateTreeModule" });
 
-        PrivateDependencyModuleNames.AddRange(new string[] { "GameplayAbilities", "GameplayTags", "GameplayTasks" });
+		PrivateDependencyModuleNames.AddRange(new string[] { "GameplayAbilities", "GameplayTags", "GameplayTasks" });
 
-        PublicIncludePaths.Add("TimeRunner");
+		PublicIncludePaths.Add("TimeRunner");
 
+		if (Target.Configuration != UnrealTargetConfiguration.Shipping || Target.Type == TargetType.Editor)
+		{
+			PublicDefinitions.Add("AUTOMATION_TEST=1");
+		}
+		else
+		{
+			PublicDefinitions.Add("AUTOMATION_TEST=0");
+		}
 
-        if (Target.Configuration != UnrealTargetConfiguration.Shipping || Target.Type == TargetType.Editor)
-        {
-            PublicDefinitions.Add("AUTOMATION_TEST=1");
-        }
-        else
-        {
-            PublicDefinitions.Add("AUTOMATION_TEST=0");
-        }
+		// Uncomment if you are using Slate UI
+		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 
-        // Uncomment if you are using Slate UI
-        // PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
+		// Uncomment if you are using online features
+		// PrivateDependencyModuleNames.Add("OnlineSubsystem");
 
-        // Uncomment if you are using online features
-        // PrivateDependencyModuleNames.Add("OnlineSubsystem");
-
-        // To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
-    }
+		// To include OnlineSubsystemSteam, add it to the plugins section in your uproject file with the Enabled attribute set to true
+	}
 }

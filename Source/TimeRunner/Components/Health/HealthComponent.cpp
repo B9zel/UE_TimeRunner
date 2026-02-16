@@ -10,25 +10,23 @@ UHealthComponent::UHealthComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UHealthComponent::InitializeComponent()
-{
-	Super::InitializeComponent();
-
-	if (Owner.IsValid())
-	{
-	}
-}
-
 void UHealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Owner = GetOwner<ABaseCharacter>();
+	Owner = GetOwner();
 	check(Owner.Get());
 
-	Owner->OnTakeAnyDamage.AddDynamic(this, &UHealthComponent::TakePlayerDamage);
+	UAbilitySystemComponent* AbilityComponent = nullptr;
+	
+	if (auto* AbilityInterface = Cast<IAbilitySystemInterface>(Owner))
+	{
+		AbilityComponent = AbilityInterface->GetAbilitySystemComponent();
+	}
 
-	HealthAttribute = Owner->GetAbilitySystemComponent()->GetSet<UHealthAttributeSet>();
+	if (!AbilityComponent) return;
+
+	HealthAttribute = AbilityComponent->GetSet<UHealthAttributeSet>();
 	check(HealthAttribute);
 
 	HealthAttribute->ChangeHealth.AddUObject(this, &ThisClass::OnChangeHealth);
@@ -38,12 +36,6 @@ void UHealthComponent::BeginPlay()
 void UHealthComponent::TakeAbilityDamage(AActor* Instigator, const float OldValue, const float NewValue)
 {
 	ChangeHealth.Broadcast(Instigator, OldValue, NewValue);
-}
-
-void UHealthComponent::TakePlayerDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
-{
-
-	// m_CurrentHP = FMath::Clamp(m_CurrentHP - Damage, 0.0f, m_MaxHP);
 }
 
 void UHealthComponent::OnChangeHealth(AActor* Instigator, const float OldValue, const float NewValue)

@@ -58,6 +58,7 @@ void URunWallComponent::DeactivateRunWall()
 {
 	IsWallRunning = false;
 	OwnerAbilitySystem->CancelAbilities(&RunWallTagAbility);
+	SetCurrentDirectionTrace(0.0f);
 	GEngine->AddOnScreenDebugMessage(-1, 4.0f, FColor::Blue, FString::Printf(TEXT("Cancel run Ability")));
 	DeactivateRunWallDispatcher.Broadcast();
 }
@@ -126,7 +127,10 @@ void URunWallComponent::JumpOffWall()
 
 void URunWallComponent::SetCurrentDirectionTrace(const float Direction)
 {
-	DirectionTrace = FMath::Clamp(Direction, -1, 1);
+	if (GetIsWallRunning() && FMath::IsNearlyZero(Direction)) return;
+
+	DirectionTrace = FMath::RoundToInt(FMath::Clamp(Direction, -1, 1));
+	GEngine->AddOnScreenDebugMessage(-1, 0.5, FColor::Green, FString::Printf(TEXT("Direction trace: %f"), Direction));
 }
 
 void URunWallComponent::SetArrowComponent(const UArrowComponent* Arrow)

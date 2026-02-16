@@ -164,7 +164,7 @@ protected:
 	UPROPERTY(EditAnywhere, meta = (Category = "Parameters|Attack", ClampMin = "0.0"))
 	float DistanceAttack;
 	UPROPERTY(EditAnywhere, meta = (Category = "Parameters|Attack"))
-	TEnumAsByte<ECollisionChannel> ChannelAttack;
+	TArray<TEnumAsByte<EObjectTypeQuery>> ChannelsAttack;
 
 	UPROPERTY(EditAnywhere, meta = (Category = "Parameters|Sockets"))
 	FName SocketKatana;

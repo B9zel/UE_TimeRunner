@@ -16,12 +16,14 @@ class TIMERUNNER_API ABulletTurret : public ABaseTurret
 
 protected:
 
+	virtual void BeginPlay() override;
 	virtual void OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 								bool bFromSweep, const FHitResult& SweepResult) override;
 
 	virtual void OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) override;
 	virtual void StartAttack();
 	virtual void StopAttack();
+
 	UFUNCTION()
 	virtual void OnRotateTurret();
 
@@ -31,16 +33,21 @@ protected:
 	UFUNCTION(BlueprintNativeEvent)
 	void OnShot();
 
-	virtual void BeginPlay() override;
+private:
+
+	float TurnToTarget(float Current, float Target, const float Speed, const float DeltaTime);
+
+	UFUNCTION()
+	void NotifyShot();
 
 protected:
 
-	UGlobalTimer* InstanceGlobalTier{nullptr};
+	FTimerManager* InstanceTimer{nullptr};
 
 private:
 
-	FGlobalTimerHandle m_RotateTimerHandle;
-	FGlobalTimerHandle m_ShotTimerHandle;
+	FTimerHandle m_RotateTimerHandle;
+	FTimerHandle m_ShotTimerHandle;
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TWeakObjectPtr<ATimerRunnerCharacter> TargetAttack;
 	UPROPERTY(EditAnywhere)

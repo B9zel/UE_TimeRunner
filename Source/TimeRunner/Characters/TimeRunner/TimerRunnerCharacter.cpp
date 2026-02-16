@@ -19,6 +19,8 @@
 #include "Components/RunWall/RunWallComponent.h"
 #include "Components/Countermotion/CountermotionComponent.h"
 #include "AbilitySystem/Attributes/Damage/DamageAttributeSet.h"
+#include "CollisionQueryParams.h"
+#include "KismetTraceUtils.h"
 
 ATimerRunnerCharacter::ATimerRunnerCharacter()
 {
@@ -232,11 +234,13 @@ void ATimerRunnerCharacter::InputCrouchStartCharacter(const FInputActionInstance
 void ATimerRunnerCharacter::InputAttackStartedCharacter(const FInputActionInstance& Instance)
 {
 	TArray<FHitResult> HitRes;
-	TArray<AActor*> Ignore;
-	UKismetSystemLibrary::CapsuleTraceMulti(
-		this, CameraComponent->GetComponentLocation(), CameraComponent->GetComponentLocation() + CameraComponent->GetForwardVector() * DistanceAttack, 20, 40,
-		UCollisionProfile::Get()->ConvertToTraceType(ChannelAttack), false, Ignore, EDrawDebugTrace::ForDuration, HitRes, true);
-	// GetWorld()->LineTraceMultiByChannel(HitRes, GetActorLocation(), GetActorLocation() + GetActorForwardVector() * DistanceAttack, ChannelAttack);
+
+	// const FCollisionQueryParams Params = ConfigureCollisionParams(TEXT("MultiCapsuleTrace"), false, TArray<AActor*>(), true, this);
+	const FVector Begin = CameraComponent->GetComponentLocation();
+	const FVector End = CameraComponent->GetComponentLocation() + CameraComponent->GetForwardVector() * DistanceAttack;
+
+	UKismetSystemLibrary::CapsuleTraceMultiForObjects(this, Begin, End, 20, 40, ChannelsAttack, false, TArray<AActor*>(), EDrawDebugTrace::ForDuration, HitRes,
+													  true);
 	for (auto& Hit : HitRes)
 	{
 
@@ -283,7 +287,6 @@ void ATimerRunnerCharacter::OnChangeLevelOfSpeed(const ELevelSpeed NewSpeed)
 	}
 }
 
-
 void ATimerRunnerCharacter::StartRunWall_Implementation()
 {
 	RunWallComponent->StartRunWall();
@@ -295,7 +298,7 @@ void ATimerRunnerCharacter::StopRunWall_Implementation(const bool DisableCanWall
 }
 
 void ATimerRunnerCharacter::SetOldestState(const FCountermotionData& Data)
-{	
+{
 	SetActorLocation(Data.Location);
 	GetController()->SetControlRotation(Data.Rotation);
 	GetAbilitySystemComponent()->SetNumericAttributeBase(UHealthAttributeSet::GetHealthAttribute(), Data.Health);

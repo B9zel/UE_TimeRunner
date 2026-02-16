@@ -28,7 +28,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parameters", meta = (Units = "s", ClampMin = "0.0"))
 	float ReloadTime;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parameters", meta = (Units = "s", ClampMin = "0.0"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parameters", meta = (ClampMin = "0.0"))
 	float Damage;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Parameters")
