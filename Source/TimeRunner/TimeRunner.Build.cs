@@ -9,7 +9,7 @@ public class TimeRunner : ModuleRules
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "GameplayAbilities", "GameplayTags",
-															"GameplayTasks", "StateTreeModule", "GameplayStateTreeModule" });
+															"GameplayTasks", "StateTreeModule", "GameplayStateTreeModule", "AIModule" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "GameplayAbilities", "GameplayTags", "GameplayTasks" });
 

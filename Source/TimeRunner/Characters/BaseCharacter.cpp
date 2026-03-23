@@ -6,19 +6,18 @@
 ABaseCharacter::ABaseCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
-
-	AbilityComponent = CreateDefaultSubobject<UTRAbilitySystemComponent>(TEXT("Ability system component"));
-	check(AbilityComponent);
-}
-
-UAbilitySystemComponent* ABaseCharacter::GetAbilitySystemComponent() const
-{
-	return AbilityComponent;
 }
 
 void ABaseCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+}
+
+void ABaseCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (!GetAbilitySystemComponent()) return;
 
 	GetAbilitySystemComponent()->AddLooseGameplayTags(GameplayTags);
 
@@ -38,9 +37,7 @@ void ABaseCharacter::PostInitializeComponents()
 	}
 }
 
-void ABaseCharacter::BeginPlay()
+UAbilitySystemComponent* ABaseCharacter::GetAbilitySystemComponent() const
 {
-	Super::BeginPlay();
-
-	GetAbilitySystemComponent()->InitAbilityActorInfo(this, this);
+	return nullptr;
 }

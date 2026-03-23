@@ -64,7 +64,10 @@ void UIntoxicationComponent::RestartIntoxication()
 void UIntoxicationComponent::BeginPlay()
 {
 	Super::BeginPlay();
+}
 
+void UIntoxicationComponent::OnFullInitOwner()
+{
 	OwnerCharacter = GetOwner<ABaseCharacter>();
 	check(OwnerCharacter);
 

@@ -1,10 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Components/Countermotion/CountermotionComponent.h"
 #include "Components/Health/HealthComponent.h"
 #include "Global/GameInstance/MainGameInstance.h"
-
 
 DECLARE_LOG_CATEGORY_CLASS(CountermotionCompLog, All, All);
 
@@ -14,18 +12,21 @@ UCountermotionComponent::UCountermotionComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-
 // Called when the game starts
 void UCountermotionComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// GetWorld()->GetTimerManager().SetTimer(RateSaveDataHandle, this, &UCountermotionComponent::SaveFrameData, Second / CountSaveDataPerSecond, true);
+}
+
+void UCountermotionComponent::OnFullInitOwner()
+{
 	const float Second = 1.0f;
 	CountermotionDataArray.Reserve(GetMaxCountElementsOfSaveData());
 
 	GetWorld()->GetGameInstance<UMainGameInstance>()->GetGlobalTimer()->SetTimer(RateSaveDataHandle, this, &ThisClass::SaveFrameData,
 																				 Second / CountSaveDataPerSecond, true);
-	//GetWorld()->GetTimerManager().SetTimer(RateSaveDataHandle, this, &UCountermotionComponent::SaveFrameData, Second / CountSaveDataPerSecond, true);
 }
 
 const FCountermotionData& UCountermotionComponent::GetOldData() const
@@ -43,9 +44,8 @@ const FCountermotionData& UCountermotionComponent::GetOldData() const
 	return CountermotionDataArray[CurrentIndexSave];
 }
 
-
 void UCountermotionComponent::SaveFrameData()
-{		
+{
 	if (CountermotionDataArray.Num() < GetMaxCountElementsOfSaveData())
 	{
 		CountermotionDataArray.Add(CollectData());
@@ -55,7 +55,6 @@ void UCountermotionComponent::SaveFrameData()
 		CountermotionDataArray[CurrentIndexSave] = CollectData();
 	}
 	CurrentIndexSave = (CurrentIndexSave + 1) % GetMaxCountElementsOfSaveData();
-
 }
 
 int32 UCountermotionComponent::GetMaxCountElementsOfSaveData() const

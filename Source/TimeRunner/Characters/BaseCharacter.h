@@ -24,7 +24,7 @@ public:
 public:
 
 	UFUNCTION(BlueprintPure)
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const;
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 	virtual void PostInitializeComponents() override;
 
@@ -38,9 +38,6 @@ protected:
 	FGameplayTag EventApplyDamage;
 
 private:
-
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<UTRAbilitySystemComponent> AbilityComponent;
 
 	UPROPERTY(EditAnywhere, Category = "Parameters")
 	FGameplayTagContainer GameplayTags;

@@ -213,6 +213,8 @@ bool FShouldBeCheckInputValue::RunTest(const FString& Parameters)
 		TestEqual("Safe border has different value", IntoxicationComp->GetSafeBorder(), i[1]);
 	}
 
+	IntoxicationComp->DestroyComponent();
+
 	return true;
 }
 
@@ -271,6 +273,8 @@ bool FShouldBeApplyDamage::RunTest(const FString& Parameters)
 	IntoxicationComponent->ActivateIntixication();
 
 	ADD_LATENT_AUTOMATION_COMMAND(FShouldBeTakentoxicationDamage(Runner, testCharacter, 0.1f + Delay));
+
+
 
 	return true;
 }

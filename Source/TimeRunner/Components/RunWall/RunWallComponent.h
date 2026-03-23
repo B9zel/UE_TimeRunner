@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Components/BaseComponent.h"
 #include "GameplayTagContainer.h"
 #include "RunWallComponent.generated.h"
 
@@ -13,7 +13,7 @@ class UAbilitySystemComponent;
 class UArrowComponent;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class TIMERUNNER_API URunWallComponent : public UActorComponent
+class TIMERUNNER_API URunWallComponent : public UBaseComponent
 {
 	GENERATED_BODY()
 
@@ -52,6 +52,7 @@ protected:
 
 	// Called when the game starts
 	virtual void BeginPlay() override;
+	virtual void OnFullInitOwner() override;
 
 private:
 

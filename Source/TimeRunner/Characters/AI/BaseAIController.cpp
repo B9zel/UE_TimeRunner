@@ -3,6 +3,7 @@
 #include "Characters/AI/BaseAIController.h"
 #include "Components/StateTreeAIComponent.h"
 
+
 ABaseAIController::ABaseAIController()
 {
 	StateTreeComponent = CreateDefaultSubobject<UStateTreeAIComponent>(TEXT("State tree component"));

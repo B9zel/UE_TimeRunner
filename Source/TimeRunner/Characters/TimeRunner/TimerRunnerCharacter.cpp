@@ -21,6 +21,7 @@
 #include "AbilitySystem/Attributes/Damage/DamageAttributeSet.h"
 #include "CollisionQueryParams.h"
 #include "KismetTraceUtils.h"
+#include "Global/PlayerState/TRPlayerState.h"
 
 ATimerRunnerCharacter::ATimerRunnerCharacter()
 {
@@ -90,7 +91,7 @@ void ATimerRunnerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	Input->BindAction(InputObjects.JumpActions, ETriggerEvent::Completed, this, &ATimerRunnerCharacter::InputJumpCompletedCharacter);
 	Input->BindAction(InputObjects.SwitchSpeedActions, ETriggerEvent::Triggered, this, &ATimerRunnerCharacter::InputSwitchSpeedTriggerCharacter);
 	Input->BindAction(InputObjects.CrouchActions, ETriggerEvent::Started, this, &ATimerRunnerCharacter::InputCrouchStartCharacter);
-	Input->BindAction(InputObjects.AttackAction, ETriggerEvent::Started, this, &ATimerRunnerCharacter::InputAttackStartedCharacter);
+	Input->BindAction(InputObjects.AttackAction, ETriggerEvent::Triggered, this, &ATimerRunnerCharacter::InputAttackStartedCharacter);
 	Input->BindAction(InputObjects.OldestStateAction, ETriggerEvent::Started, this, &ATimerRunnerCharacter::InputOldestBackStartCharacter);
 	Input->BindAction(InputObjects.DashAction, ETriggerEvent::Started, this, &ATimerRunnerCharacter::InputDashStartCharacter);
 }
@@ -103,6 +104,9 @@ void ATimerRunnerCharacter::BeginPlay()
 	{
 		DilationComponent->ChanageSpeedDelegate.AddDynamic(this, &ATimerRunnerCharacter::OnChangeLevelOfSpeed);
 	}
+
+	Damage = GetAbilitySystemComponent()->GetSet<UDamageAttributeSet>();
+	check(Damage);
 }
 
 void ATimerRunnerCharacter::Tick(float DeltaTime)
@@ -239,15 +243,23 @@ void ATimerRunnerCharacter::InputAttackStartedCharacter(const FInputActionInstan
 	const FVector Begin = CameraComponent->GetComponentLocation();
 	const FVector End = CameraComponent->GetComponentLocation() + CameraComponent->GetForwardVector() * DistanceAttack;
 
-	UKismetSystemLibrary::CapsuleTraceMultiForObjects(this, Begin, End, 20, 40, ChannelsAttack, false, TArray<AActor*>(), EDrawDebugTrace::ForDuration, HitRes,
-													  true);
+	UKismetSystemLibrary::CapsuleTraceMulti(this, Begin, End, 20, 40, TypeAttackChannel, false, TArray<AActor*>(), EDrawDebugTrace::ForDuration, HitRes, true);
+	static TSet<AActor*> ConteinUsedActor;
+	ConteinUsedActor.Reset();
+
+	/*UKismetSystemLibrary::CapsuleTraceMultiForObjects(this, Begin, End, 20, 40, ChannelsAttack, false, TArray<AActor*>(), EDrawDebugTrace::ForDuration,
+	   HitRes, true);*/
 	for (auto& Hit : HitRes)
 	{
+		if (!ConteinUsedActor.Contains(Hit.GetActor()))
+		{
+			FGameplayEventData EventData;
+			EventData.Target = Hit.GetActor();
+			EventData.EventMagnitude = Damage ? Damage->GetDamage() : 0.0f;
+			GetAbilitySystemComponent()->HandleGameplayEvent(EventApplyDamage, &EventData);
 
-		FGameplayEventData EventData;
-		EventData.Target = Hit.GetActor();
-		EventData.EventMagnitude = Damage ? Damage->GetDamage() : 0.0f;
-		GetAbilitySystemComponent()->HandleGameplayEvent(EventApplyDamage, &EventData);
+			ConteinUsedActor.Add(Hit.GetActor());
+		}
 	}
 }
 
@@ -351,4 +363,18 @@ void ATimerRunnerCharacter::ResetTimeDilation_Implementation()
 	// GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Magenta, TEXT(__FUNCSIG__));
 	DilationComponent->DisableTimeDilation();
 	IntoxicationComponent->DeactivateIntixication();
+}
+
+FGenericTeamId ATimerRunnerCharacter::GetGenericTeamId() const
+{
+	return ETeamAttitude::Type::Hostile;
+}
+
+UAbilitySystemComponent* ATimerRunnerCharacter::GetAbilitySystemComponent() const
+{
+	if (auto* PS = GetPlayerState<ATRPlayerState>())
+	{
+		return PS->GetAbilitySystemComponent();
+	}
+	return nullptr;
 }

@@ -9,6 +9,7 @@
 #include "Global/GlobalTimer/GlobalTimer.h"
 #include "Interfaces/WallRunInterface.h"
 #include "Interfaces/TimeDilationInterface.h"
+#include "GenericTeamAgentInterface.h"
 #include "TimerRunnerCharacter.generated.h"
 
 class UInputAction;
@@ -52,7 +53,12 @@ public:
 };
 
 UCLASS()
-class TIMERUNNER_API ATimerRunnerCharacter : public ABaseCharacter, public IStateBackInterface, public IWallRunInterface, public ITimeDilationInterface
+class TIMERUNNER_API ATimerRunnerCharacter : public ABaseCharacter,
+											 public IStateBackInterface,
+											 public IWallRunInterface,
+											 public ITimeDilationInterface,
+											 public IGenericTeamAgentInterface
+
 {
 	GENERATED_BODY()
 
@@ -65,6 +71,14 @@ public:
 	inline const FInput& GetInputObject() const;
 	virtual void PreRegisterAllComponents() override;
 	virtual void NotifyJumpApex() override;
+
+	// IAbilitySystemInterface begin
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	// IAbilitySystemInterface end
+
+	// IGenericTeamAgentInterface begin
+	virtual FGenericTeamId GetGenericTeamId() const;
+	// IGenericTeamAgentInterface end
 
 	// IStateBackInterface begin
 	virtual void SetOldestState(const FCountermotionData& Data) override;
@@ -148,7 +162,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UCountermotionComponent> CountermotionComponent;
 
-
 	// Castom components end
 
 	//  Component end
@@ -165,6 +178,8 @@ protected:
 	float DistanceAttack;
 	UPROPERTY(EditAnywhere, meta = (Category = "Parameters|Attack"))
 	TArray<TEnumAsByte<EObjectTypeQuery>> ChannelsAttack;
+	UPROPERTY(EditAnywhere, meta = (Category = "Parameters|Attack"))
+	TEnumAsByte<ETraceTypeQuery> TypeAttackChannel;
 
 	UPROPERTY(EditAnywhere, meta = (Category = "Parameters|Sockets"))
 	FName SocketKatana;
@@ -191,5 +206,4 @@ private:
 
 	bool WasDashInAir{false};
 	bool m_IsInputMove;
-
 };

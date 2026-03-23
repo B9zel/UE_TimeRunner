@@ -13,12 +13,20 @@ UHealthComponent::UHealthComponent()
 void UHealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
+}
 
+void UHealthComponent::TakeAbilityDamage(AActor* Instigator, const float OldValue, const float NewValue)
+{
+	// ChangeHealth.Broadcast(Instigator, OldValue, NewValue);
+}
+
+void UHealthComponent::OnFullInitOwner()
+{
 	Owner = GetOwner();
 	check(Owner.Get());
 
 	UAbilitySystemComponent* AbilityComponent = nullptr;
-	
+
 	if (auto* AbilityInterface = Cast<IAbilitySystemInterface>(Owner))
 	{
 		AbilityComponent = AbilityInterface->GetAbilitySystemComponent();
@@ -30,12 +38,6 @@ void UHealthComponent::BeginPlay()
 	check(HealthAttribute);
 
 	HealthAttribute->ChangeHealth.AddUObject(this, &ThisClass::OnChangeHealth);
-
-}
-
-void UHealthComponent::TakeAbilityDamage(AActor* Instigator, const float OldValue, const float NewValue)
-{
-	ChangeHealth.Broadcast(Instigator, OldValue, NewValue);
 }
 
 void UHealthComponent::OnChangeHealth(AActor* Instigator, const float OldValue, const float NewValue)

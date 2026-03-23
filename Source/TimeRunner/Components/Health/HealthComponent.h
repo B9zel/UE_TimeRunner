@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Components/BaseComponent.h"
 #include "GameplayEffectTypes.h"
 
 #include "HealthComponent.generated.h"
@@ -15,7 +15,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FHealthChangeDelegate, AActor*, I
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDeadDelegate, AActor*, Instigate);
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class TIMERUNNER_API UHealthComponent : public UActorComponent
+class TIMERUNNER_API UHealthComponent : public UBaseComponent
 {
 	GENERATED_BODY()
 
@@ -35,6 +35,7 @@ protected:
 
 	virtual void BeginPlay() override;
 	virtual void TakeAbilityDamage(AActor* Instigator, const float OldValue, const float NewValue);
+	virtual void OnFullInitOwner() override;
 
 private:
 

@@ -15,7 +15,10 @@ URunWallComponent::URunWallComponent()
 void URunWallComponent::BeginPlay()
 {
 	Super::BeginPlay();
+}
 
+void URunWallComponent::OnFullInitOwner()
+{
 	OwnerCharacter = GetOwner<ACharacter>();
 	check(OwnerCharacter.IsValid());
 

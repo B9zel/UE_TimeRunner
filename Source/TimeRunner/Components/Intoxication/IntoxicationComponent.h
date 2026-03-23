@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Components/BaseComponent.h"
 #include "GameplayTagContainer.h"
 #include "IntoxicationComponent.generated.h"
 
@@ -12,7 +12,7 @@ class ABaseCharacter;
 struct FGameplayAttribute;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class TIMERUNNER_API UIntoxicationComponent : public UActorComponent
+class TIMERUNNER_API UIntoxicationComponent : public UBaseComponent
 {
 	GENERATED_BODY()
 
@@ -72,6 +72,8 @@ protected:
 
 	// Called when the game starts
 	virtual void BeginPlay() override;
+
+	virtual void OnFullInitOwner() override;
 
 public:
 

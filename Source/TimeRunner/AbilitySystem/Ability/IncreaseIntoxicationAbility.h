@@ -13,7 +13,6 @@ class TIMERUNNER_API UIncreaseIntoxicationAbility : public UGameplayAbility
 {
 	GENERATED_BODY()
 
-protected:
 private:
 
 	UFUNCTION()
