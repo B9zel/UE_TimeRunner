@@ -133,7 +133,6 @@ void URunWallComponent::SetCurrentDirectionTrace(const float Direction)
 	if (GetIsWallRunning() && FMath::IsNearlyZero(Direction)) return;
 
 	DirectionTrace = FMath::RoundToInt(FMath::Clamp(Direction, -1, 1));
-	GEngine->AddOnScreenDebugMessage(-1, 0.5, FColor::Green, FString::Printf(TEXT("Direction trace: %f"), Direction));
 }
 
 void URunWallComponent::SetArrowComponent(const UArrowComponent* Arrow)

@@ -90,8 +90,8 @@ int64 UGlobalTimer::GenerateHadleID()
 void UGlobalTimer::UpdateTimers()
 {
 	double Now = FPlatformTime::Seconds();
-	;
-	UE_LOG(GlobalTimerLog, Display, TEXT("Start UpdateTimer %d"), Timers.Num());
+
+	//UE_LOG(GlobalTimerLog, Display, TEXT("Start UpdateTimer %d"), Timers.Num());
 
 	for (auto& Timer : AddTimer)
 	{
@@ -110,7 +110,7 @@ void UGlobalTimer::UpdateTimers()
 	{
 		GlobalTimerData& Value = Timer.Value;
 		const double Delta = Now - Value.LastTime;
-		
+
 		if (Value.Rate <= Delta)
 		{
 			if (!Value.Delegate.IsBound())
@@ -140,7 +140,7 @@ void UGlobalTimer::UpdateTimers()
 	}
 	IsUpdatingTimer = false;
 
-	UE_LOG(GlobalTimerLog, Display, TEXT("Finish UpdateTimer %d"), Timers.Num());
+	// UE_LOG(GlobalTimerLog, Display, TEXT("Finish UpdateTimer %d"), Timers.Num());
 }
 
 void FGlobalUnifieldTimerDelegate::Execute()

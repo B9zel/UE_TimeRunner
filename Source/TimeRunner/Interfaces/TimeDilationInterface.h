@@ -28,4 +28,10 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
 	void ResetTimeDilation();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	bool GetCanApplyTimeDilation() const;
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void SetCanApplyTimeDilation(bool CanDilation);
 };

@@ -4,6 +4,7 @@
 #include "Characters/BaseCharacter.h"
 #include <AbilitySystemComponent.h>
 #include "TimeRunner/Data/DataAssets/LevelsOfSpeedDataAsset.h"
+#include "AbilitySystem/Component/TRAbilitySystemComponent.h"
 
 UTimeDilationComponent::UTimeDilationComponent()
 {
@@ -18,7 +19,7 @@ void UTimeDilationComponent::BeginPlay()
 	Super::BeginPlay();
 
 	OwnerCharacter = GetOwner<ABaseCharacter>();
-	check(OwnerCharacter);
+	check(OwnerCharacter.IsValid());
 
 	// clang-format off
 	float SlowSpeed		= 1.0f;
@@ -44,9 +45,11 @@ void UTimeDilationComponent::EnableTimeDilation()
 {
 	if (DilationAbilityTag.IsValid())
 	{
-		OwnerCharacter->GetAbilitySystemComponent()->TryActivateAbilitiesByTag(DilationAbilityTag.GetSingleTagContainer());
-		ChanageSpeedDelegate.Broadcast(GetEnumCurrentSpeed());
-		m_IsTimeDilation = true;
+		if (GetTRAbilitySystemComponent()->TryActivateAbilityByTagOutHandle(DilationAbilityTag.GetSingleTagContainer(), ActivedDilationAbilityHandles))
+		{
+			ChanageSpeedDelegate.Broadcast(GetEnumCurrentSpeed());
+			m_IsTimeDilation = true;
+		}
 	}
 }
 
@@ -56,6 +59,7 @@ void UTimeDilationComponent::DisableTimeDilation()
 	{
 		const auto& ConteinerTag = DilationAbilityTag.GetSingleTagContainer();
 		OwnerCharacter->GetAbilitySystemComponent()->CancelAbilities(&ConteinerTag);
+		ActivedDilationAbilityHandles.Empty();
 		m_IsTimeDilation = false;
 	}
 }
@@ -104,6 +108,19 @@ inline const uint32 UTimeDilationComponent::GetCurrentSpeed() const
 	return m_CurrentSpeed % m_Speeds.Num();
 }
 
+inline UTRAbilitySystemComponent* UTimeDilationComponent::GetTRAbilitySystemComponent() const
+{
+	if (!AbilitySystemComponent.IsValid())
+	{
+		if (OwnerCharacter.IsValid())
+		{
+			AbilitySystemComponent = Cast<UTRAbilitySystemComponent>(OwnerCharacter->GetAbilitySystemComponent());
+		}
+	}
+
+	return AbilitySystemComponent.Get();
+}
+
 inline float UTimeDilationComponent::GetRunWorldTime() const
 {
 	auto* SpeedVal = m_Speeds.Find(GetEnumCurrentSpeed());
@@ -117,6 +134,16 @@ inline float UTimeDilationComponent::GetWalkWorldTime() const
 
 inline bool UTimeDilationComponent::GetIsTimeDilation() const
 {
+	bool IsAbilityActive = false;
+	for (auto& Handle : ActivedDilationAbilityHandles)
+	{
+		if (auto* Spec = GetTRAbilitySystemComponent()->FindAbilitySpecFromHandle(Handle))
+		{
+			IsAbilityActive |= Spec->IsActive();
+		}
+	}
+
+	m_IsTimeDilation = IsAbilityActive;
 	return m_IsTimeDilation;
 }
 

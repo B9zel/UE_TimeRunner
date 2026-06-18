@@ -94,6 +94,8 @@ public:
 	// ITimeDilationInterface begin
 	void ApplyTimeDilation_Implementation();
 	void ResetTimeDilation_Implementation();
+	bool GetCanApplyTimeDilation_Implementation() const;
+	void SetCanApplyTimeDilation_Implementation(bool CanDilation);
 	// ITimeDilationInterface end
 
 protected:
@@ -108,7 +110,6 @@ protected:
 	// Character method end
 
 	void InputRunTriggerCharacter(const FInputActionInstance& Instance);
-	void InputRunStartCharacter(const FInputActionInstance& Instance);
 	void InputRunCompletedCharacter(const FInputActionInstance& Instance);
 	void InputLookCharacter(const FInputActionInstance& Instance);
 	void InputJumpStartCharacter(const FInputActionInstance& Instance);
@@ -123,9 +124,12 @@ protected:
 
 	void ActivateDash();
 
+	UFUNCTION(BlueprintCallable)
+	bool GetIsInputMove() const;
+
 private:
 
-	bool GetIsInputMove() const;
+	bool GetIsOnGround();
 	void SetIsInputMove(const bool InputMove);
 
 	UFUNCTION()
@@ -134,6 +138,8 @@ private:
 
 	UFUNCTION()
 	void OnActivetedRunWall();
+
+	bool IsCrouching();
 
 protected:
 
@@ -203,6 +209,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Parameters|Dash|Tag")
 	FGameplayTagContainer DashTagAbility;
+
+	UPROPERTY(EditAnywhere)
+	bool CanTimeDilation{true};
 
 	bool WasDashInAir{false};
 	bool m_IsInputMove;

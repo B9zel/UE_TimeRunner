@@ -84,7 +84,6 @@ void ATimerRunnerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	check(Input);
 
 	Input->BindAction(InputObjects.RunAction, ETriggerEvent::Triggered, this, &ATimerRunnerCharacter::InputRunTriggerCharacter);
-	Input->BindAction(InputObjects.RunAction, ETriggerEvent::Started, this, &ATimerRunnerCharacter::InputRunStartCharacter);
 	Input->BindAction(InputObjects.RunAction, ETriggerEvent::Completed, this, &ATimerRunnerCharacter::InputRunCompletedCharacter);
 	Input->BindAction(InputObjects.LookActions, ETriggerEvent::Triggered, this, &ATimerRunnerCharacter::InputLookCharacter);
 	Input->BindAction(InputObjects.JumpActions, ETriggerEvent::Started, this, &ATimerRunnerCharacter::InputJumpStartCharacter);
@@ -148,6 +147,13 @@ void ATimerRunnerCharacter::NotifyJumpApex()
 // Input begin
 void ATimerRunnerCharacter::InputRunTriggerCharacter(const FInputActionInstance& Instance)
 {
+	SetIsInputMove(true);
+
+	if ((GetIsOnGround() && !IsCrouching()) && !DilationComponent->GetIsTimeDilation())
+	{
+		Execute_ApplyTimeDilation(this);
+	}
+
 	const FVector2D& Direction = Instance.GetValue().Get<FVector2D>();
 	RunWallComponent->SetCurrentDirectionTrace(Direction.X > 0 ? Direction.Y : 0.0f);
 
@@ -155,12 +161,9 @@ void ATimerRunnerCharacter::InputRunTriggerCharacter(const FInputActionInstance&
 	AddMovementInput(GetActorRightVector(), Direction.Y);
 }
 
-void ATimerRunnerCharacter::InputRunStartCharacter(const FInputActionInstance& Instance)
+bool ATimerRunnerCharacter::GetIsOnGround()
 {
-	SetIsInputMove(true);
-	if (!GetCharacterMovement()->IsWalking() || GetCharacterMovement()->IsCrouching()) return;
-
-	Execute_ApplyTimeDilation(this);
+	return GetCharacterMovement()->IsWalking();
 }
 
 void ATimerRunnerCharacter::InputRunCompletedCharacter(const FInputActionInstance& Instance)
@@ -331,6 +334,11 @@ void ATimerRunnerCharacter::OnActivetedRunWall()
 	WasDashInAir = false;
 }
 
+bool ATimerRunnerCharacter::IsCrouching()
+{
+	return GetCharacterMovement()->IsCrouching() || GetCharacterMovement()->bWantsToCrouch;
+}
+
 inline const FInput& ATimerRunnerCharacter::GetInputObject() const
 {
 	return InputObjects;
@@ -353,9 +361,14 @@ float ATimerRunnerCharacter::GetTimeActiveRunWall_Implementation()
 
 void ATimerRunnerCharacter::ApplyTimeDilation_Implementation()
 {
-	// GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Emerald, TEXT(__FUNCSIG__));
-	DilationComponent->EnableTimeDilation();
-	IntoxicationComponent->ActivateIntixication();
+	// TRACE_CPUPROFILER_EVENT_SCOPE(ApplyTimeDilation)
+	if (IsCrouching()) return;
+
+	if (Execute_GetCanApplyTimeDilation(this))
+	{
+		DilationComponent->EnableTimeDilation();
+		IntoxicationComponent->ActivateIntixication();
+	}
 }
 
 void ATimerRunnerCharacter::ResetTimeDilation_Implementation()
@@ -363,6 +376,16 @@ void ATimerRunnerCharacter::ResetTimeDilation_Implementation()
 	// GEngine->AddOnScreenDebugMessage(-1, 5, FColor::Magenta, TEXT(__FUNCSIG__));
 	DilationComponent->DisableTimeDilation();
 	IntoxicationComponent->DeactivateIntixication();
+}
+
+bool ATimerRunnerCharacter::GetCanApplyTimeDilation_Implementation() const
+{
+	return CanTimeDilation;
+}
+
+void ATimerRunnerCharacter::SetCanApplyTimeDilation_Implementation(bool CanDilation)
+{
+	CanTimeDilation = CanDilation;
 }
 
 FGenericTeamId ATimerRunnerCharacter::GetGenericTeamId() const

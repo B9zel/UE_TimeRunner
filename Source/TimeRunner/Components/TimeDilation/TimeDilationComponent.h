@@ -6,11 +6,13 @@
 #include "Components/ActorComponent.h"
 #include <Kismet/GameplayStatics.h>
 #include <GameplayTagContainer.h>
+#include <GameplayAbilitySpecHandle.h>
 #include "TimeDilationComponent.generated.h"
 
 class AActor;
 class ABaseCharacter;
 class ULevelsOfSpeedDataAsset;
+class UTRAbilitySystemComponent;
 
 UENUM()
 enum class ELevelSpeed : uint8
@@ -123,7 +125,6 @@ public:
 	UFUNCTION(BlueprintPure)
 	float GetCurrentDilationByEnum(const ELevelSpeed Speed) const;
 
-
 	// @param The range of input value is from 0 to 1
 	UFUNCTION(BlueprintCallable)
 	void SetRunWorldTime(const float NewTime);
@@ -152,6 +153,8 @@ private:
 	inline ACharacter* GetOwnerCharacter() const;
 	inline const uint32 GetCurrentSpeed() const;
 
+	inline UTRAbilitySystemComponent* GetTRAbilitySystemComponent() const;
+
 public:
 
 	FChangeSpeed ChanageSpeedDelegate;
@@ -168,7 +171,7 @@ private:
 	UPROPERTY(EditAnywhere, meta = (Categories = "Time", ClampMin = "0.0", ClampMax = "1.0"))
 	float m_WalkWorldTime;
 	UPROPERTY()
-	bool m_IsTimeDilation;
+	mutable bool m_IsTimeDilation;
 
 	TMap<ELevelSpeed, TUniquePtr<BaseSpeed>> m_Speeds;
 	uint32 m_CurrentSpeed;
@@ -176,5 +179,8 @@ private:
 	UPROPERTY(EditAnywhere)
 	FGameplayTag DilationAbilityTag;
 
-	TObjectPtr<ABaseCharacter> OwnerCharacter;
+	TArray<FGameplayAbilitySpecHandle> ActivedDilationAbilityHandles;
+
+	TWeakObjectPtr<ABaseCharacter> OwnerCharacter;
+	mutable TWeakObjectPtr<UTRAbilitySystemComponent> AbilitySystemComponent;
 };
