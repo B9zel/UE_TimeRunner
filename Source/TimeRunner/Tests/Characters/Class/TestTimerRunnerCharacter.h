@@ -21,5 +21,5 @@ public:
 
 	UTimeDilationComponent* GetTimeDilationComponent() const;
 	UIntoxicationComponent* GetIntoxicationComponent() const;
-	UHealthComponent* GetHealthComponent() const;
+	UTimeRunnerHealthComponent* GetHealthComponent() const;
 };

@@ -7,7 +7,7 @@ UIntoxicationComponent* ATestTimerRunnerCharacter::GetIntoxicationComponent() co
 	return IntoxicationComponent;
 }
 
-UHealthComponent* ATestTimerRunnerCharacter::GetHealthComponent() const
+UTimeRunnerHealthComponent* ATestTimerRunnerCharacter::GetHealthComponent() const
 {
 	return HealthComponent;
 }

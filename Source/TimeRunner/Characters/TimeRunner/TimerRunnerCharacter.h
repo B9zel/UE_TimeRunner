@@ -17,7 +17,7 @@ class UInputMappingContext;
 class UCameraComponent;
 class UArrowComponent;
 class UIntoxicationComponent;
-class UHealthComponent;
+class UTimeRunnerHealthComponent;
 class UTimeDilationComponent;
 class URunWallComponent;
 class UCountermotionComponent;
@@ -160,7 +160,7 @@ protected:
 
 	// Custom components begin
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
-	TObjectPtr<UHealthComponent> HealthComponent;
+	TObjectPtr<UTimeRunnerHealthComponent> HealthComponent;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TObjectPtr<UIntoxicationComponent> IntoxicationComponent;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)

@@ -8,7 +8,7 @@
 #include <Camera/CameraComponent.h>
 #include <Kismet/GameplayStatics.h>
 #include <GameFramework/CharacterMovementComponent.h>
-#include "TimeRunner/Components/Health/HealthComponent.h"
+#include "TimeRunner/Components/Health/TimeRunnerHealthComponent.h"
 #include "TimeRunner/Components/Intoxication/IntoxicationComponent.h"
 #include "TimeRunner/Components/TimeDilation/TimeDilationComponent.h"
 #include "AbilitySystemComponent.h"
@@ -37,7 +37,7 @@ ATimerRunnerCharacter::ATimerRunnerCharacter()
 	KatanaMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>("Katana mesh");
 	KatanaMeshComponent->SetupAttachment(SkeletonMeshUpBody);
 
-	HealthComponent = CreateDefaultSubobject<UHealthComponent>("Health component");
+	HealthComponent = CreateDefaultSubobject<UTimeRunnerHealthComponent>("Health component");
 	IntoxicationComponent = CreateDefaultSubobject<UIntoxicationComponent>("Intoxication component");
 	DilationComponent = CreateDefaultSubobject<UTimeDilationComponent>("Dilation component");
 	RunWallComponent = CreateDefaultSubobject<URunWallComponent>("Wall run component");

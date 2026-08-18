@@ -31,6 +31,10 @@ void UHealthComponent::OnFullInitOwner()
 	{
 		AbilityComponent = AbilityInterface->GetAbilitySystemComponent();
 	}
+	else if (auto* Component = Owner->FindComponentByClass<UAbilitySystemComponent>())
+	{
+		AbilityComponent = Component;
+	}
 
 	if (!AbilityComponent) return;
 

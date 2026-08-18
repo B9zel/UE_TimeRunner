@@ -31,6 +31,10 @@ void UBaseComponent::BeginPlay()
 			Owner->ReceiveControllerChangedDelegate.AddDynamic(this, &ThisClass::OnPossessedOwner);
 		}
 	}
+	else if (IsValid(GetOwner()))
+	{
+		OnFullInitOwner();
+	}
 }
 
 void UBaseComponent::OnFullInitOwner()
