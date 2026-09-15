@@ -107,6 +107,7 @@ protected:
 												  const FVector& PreviousLocation, float TimeDelta) override;
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
+	virtual void HandleAbilitySystemInitialized() override;
 	// Character method end
 
 	void InputRunTriggerCharacter(const FInputActionInstance& Instance);

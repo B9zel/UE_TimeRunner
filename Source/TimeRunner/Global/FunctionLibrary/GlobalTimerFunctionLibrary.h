@@ -25,8 +25,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Global timer", meta = (DefaultToSelf = "Object", WorldContext = "Object"))
 	static void ClearGlobalTimer(const UObject* Object, UPARAM(ref) FGlobalTimerHandle& Timer);
 
-	UFUNCTION(BlueprintPure, Category = "Global timer")
-	static bool IsValidTimer(FGlobalTimerHandle TimerHandle);
+	UFUNCTION(BlueprintPure, Category = "Global timer", meta = (DefaultToSelf = "Object"))
+	static bool IsValidTimer(const UObject* Object, FGlobalTimerHandle TimerHandle);
 
 	UFUNCTION(BlueprintPure, Category = "Time")
 	static double GetTotalSeconds();

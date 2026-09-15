@@ -21,6 +21,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void OnFullInitOwner();
+	void TryInitializeOwner();
 
 
 public:	
@@ -28,4 +29,8 @@ public:
 	void OnPlayBeginOwner(APawn* Owner);
 	UFUNCTION()
 	void OnPossessedOwner(APawn* Pawn, AController* OldController, AController* NewController);
+
+private:
+
+	bool bOwnerInitialized{false};
 };

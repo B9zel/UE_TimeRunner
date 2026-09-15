@@ -23,25 +23,30 @@ void UGlobalTimer::StopGlobalTimer()
 
 void UGlobalTimer::SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDelegate Delegate, float InRate, bool InbLoop, const bool MaxOncePerFrame)
 {
-	if (InRate <= 0) return;
+	if (InRate <= 0)
+	{
+		ClearTimer(Handle);
+		return;
+	}
 
 	if (Handle.IsValid())
 	{
 		ClearTimer(Handle);
 	}
 
+	uint64 NewId = GenerateHadleID();
+	Handle.Id = NewId;
+
 	GlobalTimerData Data;
 	Data.IsLoop = InbLoop;
 	Data.Rate = InRate;
 	Data.LastTime = FPlatformTime::Seconds();
 	Data.OncePerFrame = MaxOncePerFrame;
-	Data.Handler = &Handle;
+	Data.Handler = Handle;
 
 	Data.Delegate = MoveTemp(Delegate);
 	UE_LOG(GlobalTimerLog, Display, TEXT("Set timer"));
 
-	uint64 NewId = GenerateHadleID();
-	Handle.Id = NewId;
 	if (IsUpdatingTimer)
 	{
 		AddTimer.Add(NewId, MoveTemp(Data));
@@ -55,13 +60,18 @@ void UGlobalTimer::SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDele
 
 void UGlobalTimer::ClearTimer(FGlobalTimerHandle& Handle)
 {
-	if (Timers.Contains(Handle.Id))
+	if (Timers.Contains(Handle.Id) && !DeleteTimers.Contains(Handle.Id))
 	{
 		UE_LOG(GlobalTimerLog, Display, TEXT("Clear timer"));
 		// Timers.Remove(Handle.Id);
 		DeleteTimers.AddUnique(Handle.Id);
 		Handle.Invalidate();
 	}
+}
+
+bool UGlobalTimer::IsValidTimer(const FGlobalTimerHandle& Handle) const
+{
+	return Timers.Contains(Handle.Id) && !DeleteTimers.Contains(Handle.Id);
 }
 
 int64 UGlobalTimer::GenerateHadleID()
@@ -91,7 +101,7 @@ void UGlobalTimer::UpdateTimers()
 {
 	double Now = FPlatformTime::Seconds();
 
-	//UE_LOG(GlobalTimerLog, Display, TEXT("Start UpdateTimer %d"), Timers.Num());
+	// UE_LOG(GlobalTimerLog, Display, TEXT("Start UpdateTimer %d"), Timers.Num());
 
 	for (auto& Timer : AddTimer)
 	{
@@ -116,7 +126,7 @@ void UGlobalTimer::UpdateTimers()
 			if (!Value.Delegate.IsBound())
 			{
 				DeleteTimers.AddUnique(Timer.Key);
-				Value.Handler->Invalidate();
+				Value.Handler.Invalidate();
 				continue;
 			}
 			// Execute
@@ -130,7 +140,7 @@ void UGlobalTimer::UpdateTimers()
 			if (!Value.IsLoop)
 			{
 				DeleteTimers.AddUnique(Timer.Key);
-				Value.Handler->Invalidate();
+				Value.Handler.Invalidate();
 			}
 			else
 			{

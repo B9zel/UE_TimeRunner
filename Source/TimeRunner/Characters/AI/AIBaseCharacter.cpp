@@ -21,8 +21,6 @@ void AAIBaseCharacter::BeginPlay()
 
 	Damage = GetAbilitySystemComponent()->GetSet<UDamageAttributeSet>();
 	check(Damage);
-
-	GetAbilitySystemComponent()->InitAbilityActorInfo(this, this);
 }
 
 UAbilitySystemComponent* AAIBaseCharacter::GetAbilitySystemComponent() const

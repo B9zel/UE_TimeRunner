@@ -104,8 +104,15 @@ void ATimerRunnerCharacter::BeginPlay()
 		DilationComponent->ChanageSpeedDelegate.AddDynamic(this, &ATimerRunnerCharacter::OnChangeLevelOfSpeed);
 	}
 
-	Damage = GetAbilitySystemComponent()->GetSet<UDamageAttributeSet>();
-	check(Damage);
+}
+
+void ATimerRunnerCharacter::HandleAbilitySystemInitialized()
+{
+	Super::HandleAbilitySystemInitialized();
+
+	UAbilitySystemComponent* AbilitySystemComponent = GetAbilitySystemComponent();
+	Damage = AbilitySystemComponent ? AbilitySystemComponent->GetSet<UDamageAttributeSet>() : nullptr;
+	ensureMsgf(Damage, TEXT("TimerRunnerCharacter requires UDamageAttributeSet on its AbilitySystemComponent"));
 }
 
 void ATimerRunnerCharacter::Tick(float DeltaTime)
@@ -314,7 +321,12 @@ void ATimerRunnerCharacter::StopRunWall_Implementation(const bool DisableCanWall
 
 void ATimerRunnerCharacter::SetOldestState(const FCountermotionData& Data)
 {
-	SetActorLocation(Data.Location);
+	if (!GetWorld()->OverlapBlockingTestByChannel(Data.Location, FQuat(Data.Rotation), ECollisionChannel::ECC_WorldStatic, FCollisionShape::MakeSphere(50.0f),
+												  FCollisionQueryParams(TEXT("OverlapBlockingTestByChannel"), false, this)))
+	{
+		SetActorLocation(Data.Location);
+	}
+
 	GetController()->SetControlRotation(Data.Rotation);
 	GetAbilitySystemComponent()->SetNumericAttributeBase(UHealthAttributeSet::GetHealthAttribute(), Data.Health);
 }

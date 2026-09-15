@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Components/BaseComponent.h"
+#include "Characters/BaseCharacter.h"
 #include "GameFramework/Character.h"
 
 // Sets default values for this component's properties
@@ -18,13 +19,23 @@ void UBaseComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (auto* BaseCharacter = GetOwner<ABaseCharacter>())
+	{
+		BaseCharacter->GetAbilitySystemInitializedDelegate().AddUObject(this, &ThisClass::TryInitializeOwner);
+		if (BaseCharacter->IsAbilitySystemInitialized())
+		{
+			TryInitializeOwner();
+		}
+		return;
+	}
+
 	auto* Owner = GetOwner<APawn>();
 	// GetWorld()->OnWorldMatchStarting.AddUObject(this, &ThisClass::OnFullInitOwner);
 	if (IsValid(Owner))
 	{
 		if (Owner->GetController())
 		{
-			OnFullInitOwner();
+			TryInitializeOwner();
 		}
 		else
 		{
@@ -33,7 +44,7 @@ void UBaseComponent::BeginPlay()
 	}
 	else if (IsValid(GetOwner()))
 	{
-		OnFullInitOwner();
+		TryInitializeOwner();
 	}
 }
 
@@ -41,12 +52,23 @@ void UBaseComponent::OnFullInitOwner()
 {
 }
 
+void UBaseComponent::TryInitializeOwner()
+{
+	if (bOwnerInitialized) return;
+
+	bOwnerInitialized = true;
+	OnFullInitOwner();
+}
+
 void UBaseComponent::OnPlayBeginOwner(APawn* Owner)
 {
-	OnFullInitOwner();
+	TryInitializeOwner();
 }
 
 void UBaseComponent::OnPossessedOwner(APawn* Pawn, AController* OldController, AController* NewController)
 {
-	OnFullInitOwner();
+	if (NewController)
+	{
+		TryInitializeOwner();
+	}
 }

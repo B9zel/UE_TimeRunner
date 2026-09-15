@@ -3,7 +3,7 @@
 #include "Global/FunctionLibrary/GlobalTimerFunctionLibrary.h"
 #include "Global/GameInstance/MainGameInstance.h"
 
-FGlobalTimerHandle UGlobalTimerFunctionLibrary::SetGlobalTimer(FGlobalTimerDelegate Delegate, const float Rate, const bool IsLoop /*= false*/, 
+FGlobalTimerHandle UGlobalTimerFunctionLibrary::SetGlobalTimer(FGlobalTimerDelegate Delegate, const float Rate, const bool IsLoop /*= false*/,
 															   const bool MaxOncePerFrame /* = false */)
 {
 	if (!Delegate.IsBound()) return FGlobalTimerHandle();
@@ -23,9 +23,17 @@ FGlobalTimerHandle UGlobalTimerFunctionLibrary::SetGlobalTimer(FGlobalTimerDeleg
 	return FGlobalTimerHandle();
 }
 
-bool UGlobalTimerFunctionLibrary::IsValidTimer(FGlobalTimerHandle TimerHandle)
+bool UGlobalTimerFunctionLibrary::IsValidTimer(const UObject* Object, FGlobalTimerHandle TimerHandle)
 {
-	return TimerHandle.IsValid();
+	const UWorld* World = GEngine->GetWorldFromContextObject(Object, EGetWorldErrorMode::LogAndReturnNull);
+	if (!World) return false;
+
+	auto* GameInstance = Cast<UMainGameInstance>(World->GetGameInstance());
+	if (GameInstance)
+	{
+		return GameInstance->GetGlobalTimer()->IsValidTimer(TimerHandle);
+	}
+	return false;
 }
 
 double UGlobalTimerFunctionLibrary::GetTotalSeconds()

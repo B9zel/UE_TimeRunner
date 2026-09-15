@@ -7,13 +7,8 @@ ATRPlayerState::ATRPlayerState()
 {
 	AbilityComponent = CreateDefaultSubobject<UTRAbilitySystemComponent>(TEXT("Ability system component"));
 	check(AbilityComponent);
-}
-
-void ATRPlayerState::BeginPlay()
-{
-	Super::BeginPlay();
-
-	AbilityComponent->InitAbilityActorInfo(this, GetPawn());
+	AbilityComponent->SetIsReplicated(true);
+	AbilityComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 }
 
 UAbilitySystemComponent* ATRPlayerState::GetAbilitySystemComponent() const
