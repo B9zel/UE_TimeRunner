@@ -113,7 +113,7 @@ public:
 };
 
 UCLASS()
-class TIMERUNNER_API UGlobalTimer : public UObject
+class TIMERUNNER_API UGlobalTimer : public UObject, public FTickableGameObject
 {
 	GENERATED_BODY()
 
@@ -122,6 +122,9 @@ private:
 	using DelegateGlobalTimer = TDelegate<void()>;
 
 public:
+
+	virtual void Tick(float DeltaTime) override;
+	virtual TStatId GetStatId() const override;
 
 	void StartGlobalTimer();
 	void StopGlobalTimer();
@@ -143,6 +146,7 @@ private:
 	TMap<uint64, GlobalTimerData> Timers;
 	TArray<uint64> DeleteTimers;
 	TMap<uint64, GlobalTimerData> AddTimer;
+	TMap<const void*, TSet<uint64>> ObjectToTimers;
 	FTimerHandle UpdateTimer;
 
 	bool IsUpdatingTimer{false};

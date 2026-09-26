@@ -7,7 +7,7 @@
 #include "BaseUtils.h"
 #include "BaseAttributeSet.generated.h"
 
-DECLARE_MULTICAST_DELEGATE_TwoParams(FChangeDelegate, const FGameplayAttribute&, const float);
+DECLARE_MULTICAST_DELEGATE_ThreeParams(FChangeDelegate, const FGameplayAttribute&, const float, const float);
 /**
  *
  */

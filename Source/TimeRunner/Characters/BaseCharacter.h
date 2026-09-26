@@ -14,7 +14,8 @@ class UTRAbilitySystemComponent;
 class UHealthAttributeSet;
 class UConfigAbilityDataAsset;
 
-DECLARE_MULTICAST_DELEGATE(FAbilitySystemInitializedDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FAbilitySystemInitializedDelegate);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FFullInitializeCharacter, ABaseCharacter*, Character);
 
 UCLASS(Abstract)
 class TIMERUNNER_API ABaseCharacter : public ACharacter, public IAbilitySystemInterface
@@ -46,6 +47,11 @@ protected:
 	void InitializeAbilitySystem();
 	void ClearStartupAbilities();
 
+public:
+
+	UPROPERTY(BlueprintAssignable)
+	FFullInitializeCharacter OnFullInitialize;
+
 protected:
 
 	UPROPERTY(EditAnywhere, Category = "Parameters|Attack")
@@ -58,8 +64,10 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Parameters")
 	TObjectPtr<UConfigAbilityDataAsset> PreStartAbilties;
 
-	FAbilitySetGrantedHandles StartupAbilitySetHandles;
+	UPROPERTY(BlueprintAssignable, meta = (AllowPrivateAccess = "true"))
 	FAbilitySystemInitializedDelegate AbilitySystemInitializedDelegate;
+	FAbilitySetGrantedHandles StartupAbilitySetHandles;
+
 	bool bAbilitySystemInitialized{false};
 	bool bStartupAbilitiesGranted{false};
 	TWeakObjectPtr<UAbilitySystemComponent> StartupAbilitySystem;

@@ -47,7 +47,7 @@ void UTimeDilationComponent::EnableTimeDilation()
 	{
 		if (GetTRAbilitySystemComponent()->TryActivateAbilityByTagOutHandle(DilationAbilityTag.GetSingleTagContainer(), ActivedDilationAbilityHandles))
 		{
-			ChanageSpeedDelegate.Broadcast(GetEnumCurrentSpeed());
+			// ChangeSpeedDelegate.Broadcast(GetEnumCurrentSpeed());
 			m_IsTimeDilation = true;
 		}
 	}
@@ -75,6 +75,7 @@ void UTimeDilationComponent::IncreaseSpeed()
 		{
 			EnableTimeDilation();
 		}
+		ChangeSpeedDelegate.Broadcast(GetEnumCurrentSpeed());
 	}
 }
 
@@ -89,6 +90,7 @@ void UTimeDilationComponent::DecreaseSpeed()
 		{
 			EnableTimeDilation();
 		}
+		ChangeSpeedDelegate.Broadcast(GetEnumCurrentSpeed());
 	}
 }
 

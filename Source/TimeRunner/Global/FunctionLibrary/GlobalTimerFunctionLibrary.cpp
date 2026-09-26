@@ -41,6 +41,14 @@ double UGlobalTimerFunctionLibrary::GetTotalSeconds()
 	return FApp::GetCurrentTime();
 }
 
+double UGlobalTimerFunctionLibrary::GetDeltaRealSeconds(const UObject* Object)
+{
+	const UWorld* World = GEngine->GetWorldFromContextObject(Object, EGetWorldErrorMode::LogAndReturnNull);
+	if (!World) return 0.0f;
+
+	return World->GetTime().GetDeltaRealTimeSeconds();
+}
+
 void UGlobalTimerFunctionLibrary::ClearGlobalTimer(const UObject* Object, FGlobalTimerHandle& Timer)
 {
 	if (!Timer.IsValid()) return;

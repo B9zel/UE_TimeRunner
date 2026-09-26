@@ -6,25 +6,27 @@
 #include "Components/ActorComponent.h"
 #include "BaseComponent.generated.h"
 
-
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class TIMERUNNER_API UBaseComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:	
+public:
+
 	// Sets default values for this component's properties
 	UBaseComponent();
 
 protected:
+
 	// Called when the game starts
 	virtual void BeginPlay() override;
 
 	virtual void OnFullInitOwner();
+
+	UFUNCTION()
 	void TryInitializeOwner();
 
-
-public:	
+public:
 
 	void OnPlayBeginOwner(APawn* Owner);
 	UFUNCTION()

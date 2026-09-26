@@ -101,9 +101,8 @@ void ATimerRunnerCharacter::BeginPlay()
 
 	if (DilationComponent)
 	{
-		DilationComponent->ChanageSpeedDelegate.AddDynamic(this, &ATimerRunnerCharacter::OnChangeLevelOfSpeed);
+		DilationComponent->ChangeSpeedDelegate.AddDynamic(this, &ATimerRunnerCharacter::OnChangeLevelOfSpeed);
 	}
-
 }
 
 void ATimerRunnerCharacter::HandleAbilitySystemInitialized()

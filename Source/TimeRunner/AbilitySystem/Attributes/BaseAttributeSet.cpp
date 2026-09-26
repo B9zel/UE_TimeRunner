@@ -6,7 +6,7 @@ void UBaseAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute,
 {
 	Super::PostAttributeChange(Attribute, OldValue, NewValue);
 
-	ChangeAttribute.Broadcast(Attribute, NewValue);
+	ChangeAttribute.Broadcast(Attribute, NewValue, OldValue);
 }
 
 void UBaseAttributeSet::ClampAttributes(const FGameplayAttribute& InAttributes, const FGameplayAttribute& SelfAttributes, float& Current, const float Min,

@@ -21,7 +21,7 @@ void UBaseComponent::BeginPlay()
 
 	if (auto* BaseCharacter = GetOwner<ABaseCharacter>())
 	{
-		BaseCharacter->GetAbilitySystemInitializedDelegate().AddUObject(this, &ThisClass::TryInitializeOwner);
+		BaseCharacter->GetAbilitySystemInitializedDelegate().AddDynamic(this, &ThisClass::TryInitializeOwner);
 		if (BaseCharacter->IsAbilitySystemInitialized())
 		{
 			TryInitializeOwner();

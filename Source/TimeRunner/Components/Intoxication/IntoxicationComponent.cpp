@@ -127,7 +127,7 @@ void UIntoxicationComponent::StopApplyDamageTimer()
 	GetWorld()->GetTimerManager().ClearTimer(m_ApplyDamageTimer);
 }
 
-void UIntoxicationComponent::ChangeIntoxication(const FGameplayAttribute& Attribute, const float NewValue)
+void UIntoxicationComponent::ChangeIntoxication(const FGameplayAttribute& Attribute, const float NewValue, const float OldValue)
 {
 	if (Attribute == IntoxicationAttribute->GetIntoxicationAttribute())
 	{
@@ -139,6 +139,8 @@ void UIntoxicationComponent::ChangeIntoxication(const FGameplayAttribute& Attrib
 		{
 			OwnerCharacter->GetAbilitySystemComponent()->CancelAbilities(&AbilityIntoxicationDamage);
 		}
+
+		ChangeIntoxcaion.Broadcast(this, OldValue, NewValue);
 	}
 }
 

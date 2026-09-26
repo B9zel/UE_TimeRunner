@@ -14,7 +14,7 @@ class ABaseCharacter;
 class ULevelsOfSpeedDataAsset;
 class UTRAbilitySystemComponent;
 
-UENUM()
+UENUM(BlueprintType)
 enum class ELevelSpeed : uint8
 {
 	SLOW = 0,
@@ -157,7 +157,8 @@ private:
 
 public:
 
-	FChangeSpeed ChanageSpeedDelegate;
+	UPROPERTY(BlueprintAssignable)
+	FChangeSpeed ChangeSpeedDelegate;
 
 protected:
 

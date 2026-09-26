@@ -7,9 +7,13 @@
 #include "GameplayTagContainer.h"
 #include "IntoxicationComponent.generated.h"
 
+
 class UIntoxicationAttributeSet;
 class ABaseCharacter;
 struct FGameplayAttribute;
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FChangeIntoxication, UIntoxicationComponent*, Component, const float, OldValue, const float, NewValue);
+
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class TIMERUNNER_API UIntoxicationComponent : public UBaseComponent
@@ -97,7 +101,12 @@ private:
 	void StopApplyDamageTimer();
 
 	UFUNCTION()
-	void ChangeIntoxication(const FGameplayAttribute& Attribute, const float NewValue);
+	void ChangeIntoxication(const FGameplayAttribute& Attribute, const float NewValue, const float OldValue);
+
+public:
+
+	UPROPERTY(BlueprintAssignable, Category = "Intoxication")
+	FChangeIntoxication ChangeIntoxcaion;
 
 private:
 

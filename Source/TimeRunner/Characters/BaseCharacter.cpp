@@ -73,6 +73,8 @@ void ABaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	InitializeAbilitySystem();
+
+	OnFullInitialize.Broadcast(this);
 }
 
 UAbilitySystemComponent* ABaseCharacter::GetAbilitySystemComponent() const

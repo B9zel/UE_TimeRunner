@@ -6,6 +6,16 @@ static uint64 GeneratedTimerID = 1;
 
 DECLARE_LOG_CATEGORY_CLASS(GlobalTimerLog, All, All);
 
+void UGlobalTimer::Tick(float DeltaTime)
+{
+	UpdateTimers();
+}
+
+TStatId UGlobalTimer::GetStatId() const
+{
+	RETURN_QUICK_DECLARE_CYCLE_STAT(UGlobalTimer, STATGROUP_Tickables);
+}
+
 void UGlobalTimer::StartGlobalTimer()
 {
 	if (UpdateTimer.IsValid()) return;
@@ -13,7 +23,7 @@ void UGlobalTimer::StartGlobalTimer()
 	FTimerManagerTimerParameters Params;
 	Params.bLoop = true;
 	Params.bMaxOncePerFrame = true;
-	GetWorld()->GetTimerManager().SetTimer(UpdateTimer, this, &UGlobalTimer::UpdateTimers, UE_SMALL_NUMBER, Params);
+	// GetWorld()->GetTimerManager().SetTimer(UpdateTimer, this, &UGlobalTimer::UpdateTimers, UE_SMALL_NUMBER, Params);
 }
 
 void UGlobalTimer::StopGlobalTimer()
@@ -111,6 +121,8 @@ void UGlobalTimer::UpdateTimers()
 
 	for (uint64 Handle : DeleteTimers)
 	{
+		UE_LOG(GlobalTimerLog, Display, TEXT("Delete timer %d"), Handle);
+
 		Timers.Remove(Handle);
 	}
 	DeleteTimers.Empty();
@@ -118,6 +130,8 @@ void UGlobalTimer::UpdateTimers()
 	IsUpdatingTimer = true;
 	for (auto& Timer : Timers)
 	{
+		if (DeleteTimers.Contains(Timer.Key)) continue;
+
 		GlobalTimerData& Value = Timer.Value;
 		const double Delta = Now - Value.LastTime;
 
@@ -131,7 +145,7 @@ void UGlobalTimer::UpdateTimers()
 			}
 			// Execute
 			const int32 CountExecute = (Value.OncePerFrame || !Value.IsLoop) ? 1 : (Delta / Value.Rate);
-			for (int32 i = 0; i < CountExecute; ++i)
+			for (int32 i = 0; i < CountExecute && !DeleteTimers.Contains(Timer.Key); ++i)
 			{
 				Value.Delegate.Execute();
 			}
