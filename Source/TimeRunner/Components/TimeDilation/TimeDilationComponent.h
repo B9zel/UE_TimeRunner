@@ -26,6 +26,7 @@ enum class ELevelSpeed : uint8
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FChangeSpeed, const ELevelSpeed, NewSpeed);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FStateDilation);
 
 // The higher level speed, the less effect of time dilation
 class BaseSpeed
@@ -120,7 +121,7 @@ public:
 	inline float GetWalkWorldTime() const;
 
 	UFUNCTION(BlueprintPure)
-	inline bool GetIsTimeDilation() const;
+	inline bool GetIsTimeDilation(const bool CheckActiveAbility = true) const;
 	// @return Current dilation id it doesn't exist then -1.0f
 	UFUNCTION(BlueprintPure)
 	float GetCurrentDilationByEnum(const ELevelSpeed Speed) const;
@@ -159,6 +160,11 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 	FChangeSpeed ChangeSpeedDelegate;
+
+	UPROPERTY(BlueprintAssignable)
+	FStateDilation EnableDilationDelegate;
+	UPROPERTY(BlueprintAssignable)
+	FStateDilation DisableDilationDelegate;
 
 protected:
 

@@ -1,6 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Global/GlobalTimer/GlobalTimer.h"
+#include <cmath>
+
+namespace
+{
+// Drop excess catch-up callbacks, but retain the fractional interval and original cadence.
+constexpr int32 MaxCallbacksPerTimerPerTick = 256;
+} // namespace
 
 static uint64 GeneratedTimerID = 1;
 
@@ -8,7 +15,7 @@ DECLARE_LOG_CATEGORY_CLASS(GlobalTimerLog, All, All);
 
 void UGlobalTimer::Tick(float DeltaTime)
 {
-	UpdateTimers();
+	UpdateTimers(FPlatformTime::Seconds());
 }
 
 TStatId UGlobalTimer::GetStatId() const
@@ -16,24 +23,24 @@ TStatId UGlobalTimer::GetStatId() const
 	RETURN_QUICK_DECLARE_CYCLE_STAT(UGlobalTimer, STATGROUP_Tickables);
 }
 
+bool UGlobalTimer::IsTickable() const
+{
+	return CanTick;
+}
+
 void UGlobalTimer::StartGlobalTimer()
 {
-	if (UpdateTimer.IsValid()) return;
-
-	FTimerManagerTimerParameters Params;
-	Params.bLoop = true;
-	Params.bMaxOncePerFrame = true;
-	// GetWorld()->GetTimerManager().SetTimer(UpdateTimer, this, &UGlobalTimer::UpdateTimers, UE_SMALL_NUMBER, Params);
+	CanTick = true;
 }
 
 void UGlobalTimer::StopGlobalTimer()
 {
-	GetWorld()->GetTimerManager().ClearTimer(UpdateTimer);
+	CanTick = false;
 }
 
 void UGlobalTimer::SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDelegate Delegate, float InRate, bool InbLoop, const bool MaxOncePerFrame)
 {
-	if (InRate <= 0)
+	if (!FMath::IsFinite(InRate) || InRate <= 0 || !Delegate.IsBound())
 	{
 		ClearTimer(Handle);
 		return;
@@ -70,18 +77,44 @@ void UGlobalTimer::SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDele
 
 void UGlobalTimer::ClearTimer(FGlobalTimerHandle& Handle)
 {
-	if (Timers.Contains(Handle.Id) && !DeleteTimers.Contains(Handle.Id))
+	const uint64 Id = Handle.Id;
+	Handle.Invalidate();
+	if ((Timers.Contains(Id) || AddTimer.Contains(Id)) && !DeleteTimers.Contains(Id))
 	{
 		UE_LOG(GlobalTimerLog, Display, TEXT("Clear timer"));
-		// Timers.Remove(Handle.Id);
-		DeleteTimers.AddUnique(Handle.Id);
-		Handle.Invalidate();
+		DeleteTimers.Add(Id);
 	}
+	RemovePendingTimers();
 }
 
 bool UGlobalTimer::IsValidTimer(const FGlobalTimerHandle& Handle) const
 {
-	return Timers.Contains(Handle.Id) && !DeleteTimers.Contains(Handle.Id);
+	if (DeleteTimers.Contains(Handle.Id)) return false;
+	const GlobalTimerData* Timer = Timers.Find(Handle.Id);
+	if (!Timer) Timer = AddTimer.Find(Handle.Id);
+	return Timer && Timer->Delegate.IsBound();
+}
+
+void UGlobalTimer::RemovePendingTimers()
+{
+	// An executing callback must keep its captures alive until it returns.
+	if (IsUpdatingTimer) return;
+	TGuardValue<bool> UpdatingGuard(IsUpdatingTimer, true);
+	while (!DeleteTimers.IsEmpty())
+	{
+		// Keep other canceled IDs marked while destructors run; do not retain an iterator across them.
+		const uint64 Id = *DeleteTimers.CreateConstIterator();
+		for (TMap<uint64, GlobalTimerData>* Storage : {&Timers, &AddTimer})
+		{
+			if (GlobalTimerData* Data = Storage->Find(Id))
+			{
+				// Destroy captures after removing the entry: their destructors may call back into this manager.
+				GlobalTimerData Removed(MoveTemp(*Data));
+				Storage->Remove(Id);
+			}
+		}
+		DeleteTimers.Remove(Id);
+	}
 }
 
 int64 UGlobalTimer::GenerateHadleID()
@@ -107,64 +140,62 @@ int64 UGlobalTimer::GenerateHadleID()
 	return GeneratedTimerID;
 }
 
-void UGlobalTimer::UpdateTimers()
+void UGlobalTimer::UpdateTimers(double Now)
 {
-	double Now = FPlatformTime::Seconds();
-
-	// UE_LOG(GlobalTimerLog, Display, TEXT("Start UpdateTimer %d"), Timers.Num());
-
-	for (auto& Timer : AddTimer)
-	{
-		Timers.Emplace(Timer.Key, MoveTemp(Timer.Value));
-	}
-	AddTimer.Empty();
-
-	for (uint64 Handle : DeleteTimers)
-	{
-		UE_LOG(GlobalTimerLog, Display, TEXT("Delete timer %d"), Handle);
-
-		Timers.Remove(Handle);
-	}
-	DeleteTimers.Empty();
+	if (!CanTick || IsUpdatingTimer) return;
 
 	IsUpdatingTimer = true;
+	{
+		// Keep pending additions separate from additions made by capture destructors.
+		TMap<uint64, GlobalTimerData> PendingAdds = MoveTemp(AddTimer);
+		for (auto& Timer : PendingAdds)
+		{
+			if (!DeleteTimers.Contains(Timer.Key) && Timer.Value.Delegate.IsBound())
+			{
+				Timers.Emplace(Timer.Key, MoveTemp(Timer.Value));
+			}
+		}
+	}
 	for (auto& Timer : Timers)
 	{
+		if (!CanTick) break;
 		if (DeleteTimers.Contains(Timer.Key)) continue;
 
 		GlobalTimerData& Value = Timer.Value;
+		if (!Value.Delegate.IsBound())
+		{
+			DeleteTimers.Add(Timer.Key);
+			Value.Handler.Invalidate();
+			continue;
+		}
 		const double Delta = Now - Value.LastTime;
 
 		if (Value.Rate <= Delta)
 		{
-			if (!Value.Delegate.IsBound())
-			{
-				DeleteTimers.AddUnique(Timer.Key);
-				Value.Handler.Invalidate();
-				continue;
-			}
 			// Execute
-			const int32 CountExecute = (Value.OncePerFrame || !Value.IsLoop) ? 1 : (Delta / Value.Rate);
-			for (int32 i = 0; i < CountExecute && !DeleteTimers.Contains(Timer.Key); ++i)
+			// Clamp while still in double precision, before the conversion to int32.
+			const int32 CountExecute = (Value.OncePerFrame || !Value.IsLoop)
+										   ? 1
+										   : static_cast<int32>(FMath::Min(Delta / Value.Rate, static_cast<double>(MaxCallbacksPerTimerPerTick)));
+			for (int32 i = 0; i < CountExecute && CanTick && !DeleteTimers.Contains(Timer.Key) && Value.Delegate.IsBound(); ++i)
 			{
 				Value.Delegate.Execute();
 			}
 			// Execute
 
-			if (!Value.IsLoop)
+			if (!Value.IsLoop || !Value.Delegate.IsBound())
 			{
-				DeleteTimers.AddUnique(Timer.Key);
+				DeleteTimers.Add(Timer.Key);
 				Value.Handler.Invalidate();
 			}
 			else
 			{
-				Value.LastTime = Now;
+				Value.LastTime = Now - std::fmod(Delta, static_cast<double>(Value.Rate));
 			}
 		}
 	}
 	IsUpdatingTimer = false;
-
-	// UE_LOG(GlobalTimerLog, Display, TEXT("Finish UpdateTimer %d"), Timers.Num());
+	RemovePendingTimers();
 }
 
 void FGlobalUnifieldTimerDelegate::Execute()

@@ -1,0 +1,115 @@
+{
+  "blender": "5.0.1",
+  "reopened_saved_file": true,
+  "bone_count": 39,
+  "meshes": [
+    {
+      "name": "CyborgHands_R | articulated armor",
+      "vertices": 47394,
+      "triangles": 93444,
+      "weighted_bones": {
+        "upperarm_r": 4784,
+        "lowerarm_r": 10886,
+        "hand_r": 4172,
+        "index_01_r": 1902,
+        "index_02_r": 1870,
+        "index_03_r": 1936,
+        "middle_01_r": 1870,
+        "middle_02_r": 1870,
+        "middle_03_r": 2048,
+        "ring_01_r": 1870,
+        "ring_02_r": 1870,
+        "ring_03_r": 1936,
+        "pinky_01_r": 1902,
+        "pinky_02_r": 1790,
+        "pinky_03_r": 1824,
+        "thumb_01_r": 1600,
+        "thumb_02_r": 1632,
+        "thumb_03_r": 1632
+      },
+      "unweighted_or_invalid_vertices": 0,
+      "uv_layer": "UV0",
+      "uv_within_0_1": true,
+      "materials": [
+        "04 | Elastomer - seals and recesses",
+        "05 | Woven carbon - flexible underlayer",
+        "02 | Gunmetal - machined edges",
+        "01 | Obsidian - ceramic titanium",
+        "03 | Satin titanium - fasteners",
+        "06 | Amber - illuminated power strips"
+      ]
+    },
+    {
+      "name": "CyborgHands_L | articulated armor",
+      "vertices": 47394,
+      "triangles": 93444,
+      "weighted_bones": {
+        "upperarm_l": 4784,
+        "lowerarm_l": 10886,
+        "hand_l": 4172,
+        "index_01_l": 1902,
+        "index_02_l": 1870,
+        "index_03_l": 1936,
+        "middle_01_l": 1870,
+        "middle_02_l": 1870,
+        "middle_03_l": 2048,
+        "ring_01_l": 1870,
+        "ring_02_l": 1870,
+        "ring_03_l": 1936,
+        "pinky_01_l": 1902,
+        "pinky_02_l": 1790,
+        "pinky_03_l": 1824,
+        "thumb_01_l": 1600,
+        "thumb_02_l": 1632,
+        "thumb_03_l": 1632
+      },
+      "unweighted_or_invalid_vertices": 0,
+      "uv_layer": "UV0",
+      "uv_within_0_1": true,
+      "materials": [
+        "04 | Elastomer - seals and recesses",
+        "05 | Woven carbon - flexible underlayer",
+        "02 | Gunmetal - machined edges",
+        "01 | Obsidian - ceramic titanium",
+        "03 | Satin titanium - fasteners",
+        "06 | Amber - illuminated power strips"
+      ]
+    }
+  ],
+  "pose_tests": [
+    {
+      "frame": 1,
+      "max_skinning_error_m": 2.402740045874881e-07,
+      "max_movement_from_rest_m": 0
+    },
+    {
+      "frame": 25,
+      "max_skinning_error_m": 2.402740045874881e-07,
+      "max_movement_from_rest_m": 0.18069560574622345
+    },
+    {
+      "frame": 50,
+      "max_skinning_error_m": 2.5636927089222153e-07,
+      "max_movement_from_rest_m": 0.3166488051466709
+    },
+    {
+      "frame": 75,
+      "max_skinning_error_m": 2.402740045874881e-07,
+      "max_movement_from_rest_m": 0.18069560574622345
+    },
+    {
+      "frame": 100,
+      "max_skinning_error_m": 2.402740045874881e-07,
+      "max_movement_from_rest_m": 0
+    }
+  ],
+  "packed_reference_images": 2,
+  "animation": "CyborgHands_Grip_Test",
+  "limitations": [
+    "FK rig, not an Epic mannequin rig",
+    "Procedural Blender materials; no baked texture set",
+    "Unreal import not tested",
+    "Auto UV unwrap; overlap and distortion not independently measured",
+    "Demo poses visually inspected; arbitrary poses can require clearance adjustments"
+  ]
+}

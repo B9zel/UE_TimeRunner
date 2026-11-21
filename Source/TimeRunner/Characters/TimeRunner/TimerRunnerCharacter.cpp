@@ -246,30 +246,34 @@ void ATimerRunnerCharacter::InputCrouchStartCharacter(const FInputActionInstance
 
 void ATimerRunnerCharacter::InputAttackStartedCharacter(const FInputActionInstance& Instance)
 {
-	TArray<FHitResult> HitRes;
-
-	// const FCollisionQueryParams Params = ConfigureCollisionParams(TEXT("MultiCapsuleTrace"), false, TArray<AActor*>(), true, this);
-	const FVector Begin = CameraComponent->GetComponentLocation();
-	const FVector End = CameraComponent->GetComponentLocation() + CameraComponent->GetForwardVector() * DistanceAttack;
-
-	UKismetSystemLibrary::CapsuleTraceMulti(this, Begin, End, 20, 40, TypeAttackChannel, false, TArray<AActor*>(), EDrawDebugTrace::ForDuration, HitRes, true);
-	static TSet<AActor*> ConteinUsedActor;
-	ConteinUsedActor.Reset();
-
-	/*UKismetSystemLibrary::CapsuleTraceMultiForObjects(this, Begin, End, 20, 40, ChannelsAttack, false, TArray<AActor*>(), EDrawDebugTrace::ForDuration,
-	   HitRes, true);*/
-	for (auto& Hit : HitRes)
+	if (auto* AbilityComponent = GetAbilitySystemComponent())
 	{
-		if (!ConteinUsedActor.Contains(Hit.GetActor()))
-		{
-			FGameplayEventData EventData;
-			EventData.Target = Hit.GetActor();
-			EventData.EventMagnitude = Damage ? Damage->GetDamage() : 0.0f;
-			GetAbilitySystemComponent()->HandleGameplayEvent(EventApplyDamage, &EventData);
-
-			ConteinUsedActor.Add(Hit.GetActor());
-		}
+		AbilityComponent->TryActivateAbilitiesByTag(FGameplayTagContainer(ApplyAttackAbilityTag));
 	}
+
+	// TArray<FHitResult> HitRes;
+
+	//// const FCollisionQueryParams Params = ConfigureCollisionParams(TEXT("MultiCapsuleTrace"), false, TArray<AActor*>(), true, this);
+	// const FVector Begin = CameraComponent->GetComponentLocation();
+	// const FVector End = CameraComponent->GetComponentLocation() + CameraComponent->GetForwardVector() * DistanceAttack;
+
+	// UKismetSystemLibrary::CapsuleTraceMulti(this, Begin, End, 20, 40, TypeAttackChannel, false, TArray<AActor*>(), EDrawDebugTrace::ForDuration, HitRes,
+	// true); static TSet<AActor*> ConteinUsedActor; ConteinUsedActor.Reset();
+
+	///*UKismetSystemLibrary::CapsuleTraceMultiForObjects(this, Begin, End, 20, 40, ChannelsAttack, false, TArray<AActor*>(), EDrawDebugTrace::ForDuration,
+	//   HitRes, true);*/
+	// for (auto& Hit : HitRes)
+	//{
+	//	if (!ConteinUsedActor.Contains(Hit.GetActor()))
+	//	{
+	//		FGameplayEventData EventData;
+	//		EventData.Target = Hit.GetActor();
+	//		EventData.EventMagnitude = Damage ? Damage->GetDamage() : 0.0f;
+	//		GetAbilitySystemComponent()->HandleGameplayEvent(EventApplyDamage, &EventData);
+
+	//		ConteinUsedActor.Add(Hit.GetActor());
+	//	}
+	//}
 }
 
 void ATimerRunnerCharacter::InputOldestBackStartCharacter(const FInputActionInstance& Instance)
@@ -397,6 +401,11 @@ bool ATimerRunnerCharacter::GetCanApplyTimeDilation_Implementation() const
 void ATimerRunnerCharacter::SetCanApplyTimeDilation_Implementation(bool CanDilation)
 {
 	CanTimeDilation = CanDilation;
+}
+
+float ATimerRunnerCharacter::GetDamage() const
+{
+	return Damage ? Damage->GetDamage() : 0.0f;
 }
 
 FGenericTeamId ATimerRunnerCharacter::GetGenericTeamId() const

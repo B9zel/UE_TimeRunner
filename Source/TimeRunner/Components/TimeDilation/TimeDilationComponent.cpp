@@ -49,6 +49,7 @@ void UTimeDilationComponent::EnableTimeDilation()
 		{
 			// ChangeSpeedDelegate.Broadcast(GetEnumCurrentSpeed());
 			m_IsTimeDilation = true;
+			EnableDilationDelegate.Broadcast();
 		}
 	}
 }
@@ -57,10 +58,12 @@ void UTimeDilationComponent::DisableTimeDilation()
 {
 	if (DilationAbilityTag.IsValid())
 	{
+		m_IsTimeDilation = false;
 		const auto& ConteinerTag = DilationAbilityTag.GetSingleTagContainer();
 		OwnerCharacter->GetAbilitySystemComponent()->CancelAbilities(&ConteinerTag);
 		ActivedDilationAbilityHandles.Empty();
-		m_IsTimeDilation = false;
+
+		DisableDilationDelegate.Broadcast();
 	}
 }
 
@@ -134,18 +137,22 @@ inline float UTimeDilationComponent::GetWalkWorldTime() const
 	return m_WalkWorldTime;
 }
 
-inline bool UTimeDilationComponent::GetIsTimeDilation() const
+inline bool UTimeDilationComponent::GetIsTimeDilation(const bool CheckActiveAbility) const
 {
-	bool IsAbilityActive = false;
-	for (auto& Handle : ActivedDilationAbilityHandles)
+	if (CheckActiveAbility)
 	{
-		if (auto* Spec = GetTRAbilitySystemComponent()->FindAbilitySpecFromHandle(Handle))
+		bool IsAbilityActive = false;
+		for (auto& Handle : ActivedDilationAbilityHandles)
 		{
-			IsAbilityActive |= Spec->IsActive();
+			if (auto* Spec = GetTRAbilitySystemComponent()->FindAbilitySpecFromHandle(Handle))
+			{
+				IsAbilityActive |= Spec->IsActive();
+			}
 		}
+
+		m_IsTimeDilation = IsAbilityActive;
 	}
 
-	m_IsTimeDilation = IsAbilityActive;
 	return m_IsTimeDilation;
 }
 

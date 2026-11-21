@@ -36,6 +36,7 @@ protected:
 
 	// Called when the game starts
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void OnFullInitOwner() override;
 
 public:
@@ -55,9 +56,15 @@ private:
 	UFUNCTION()
 	void SaveFrameData();
 
+	UFUNCTION()
+	void OnControllerChanged(APawn* Pawn, AController* OldController, AController* NewController);
+
+	void StartRecording();
+	void StopRecording();
+
 	int32 GetMaxCountElementsOfSaveData() const;
 
-	FCountermotionData CollectData() const;
+	bool TryCollectData(FCountermotionData& Data) const;
 
 private:
 
@@ -66,6 +73,7 @@ private:
 
 	int32 CurrentIndexSave{0};
 	FGlobalTimerHandle RateSaveDataHandle;
+	TWeakObjectPtr<UGlobalTimer> RecordingTimer;
 
 	UPROPERTY(EditAnywhere, Category = "Countermotion", meta = (ClampMin = "1"))
 	int32 CountSaveDataPerSecond{1};

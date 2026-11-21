@@ -1,0 +1,58 @@
+C:\Projects\Unreal\TimeRunner\SourceArt\CyborgHands\build_cyborg_hands.py:35: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+RIGHT ARM CREATED: 336 components
+C:\Projects\Unreal\TimeRunner\SourceArt\CyborgHands\build_cyborg_hands.py:500: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  scene.world.use_nodes=True
+00:01.266  cycles           | WARNING HIPEW initialization failed: Error opening HIP dynamic library
+RENDER DEVICE: NVIDIA GeForce RTX 4060 Laptop GPU CUDA True
+RENDER DEVICE: 13th Gen Intel Core i7-13620H CPU False
+RENDER DEVICE: NVIDIA GeForce RTX 4060 Laptop GPU OPTIX True
+Info: Saved as "CyborgHands.blend"
+SAVED C:\Projects\Unreal\TimeRunner\SourceArt\CyborgHands\CyborgHands.blend
+00:09.281  render           | Saved: 'C:\Projects\Unreal\TimeRunner\SourceArt\CyborgHands\CyborgHands_Preview.png'
+HERO_RENDER_DONE
+00:15.938  render           | Saved: 'C:\Projects\Unreal\TimeRunner\SourceArt\CyborgHands\CyborgHands_Detail.png'
+DETAIL_RENDER_DONE
+00:22.063  render           | Saved: 'C:\Projects\Unreal\TimeRunner\SourceArt\CyborgHands\CyborgHands_Palms.png'
+PALMS_RENDER_DONE
+00:28.235  render           | Saved: 'C:\Projects\Unreal\TimeRunner\SourceArt\CyborgHands\CyborgHands_GripTest.png'
+Info: Saved as "CyborgHands.blend"
+CYBORG_HANDS_COMPLETE
+00:28.281  blend            | Read blend: "C:\Projects\Unreal\TimeRunner\SourceArt\CyborgHands\CyborgHands.blend"
+{
+  "result": "PASS",
+  "bone_count": 39,
+  "triangles": 186888,
+  "vertices": 94788,
+  "pose_tests": [
+    {
+      "frame": 1,
+      "max_skinning_error_m": 2.402740045874881e-07,
+      "max_movement_from_rest_m": 0
+    },
+    {
+      "frame": 25,
+      "max_skinning_error_m": 2.402740045874881e-07,
+      "max_movement_from_rest_m": 0.18069560574622345
+    },
+    {
+      "frame": 50,
+      "max_skinning_error_m": 2.5636927089222153e-07,
+      "max_movement_from_rest_m": 0.3166488051466709
+    },
+    {
+      "frame": 75,
+      "max_skinning_error_m": 2.402740045874881e-07,
+      "max_movement_from_rest_m": 0.18069560574622345
+    },
+    {
+      "frame": 100,
+      "max_skinning_error_m": 2.402740045874881e-07,
+      "max_movement_from_rest_m": 0
+    }
+  ]
+}
+00:33.719  render           | Saved: 'C:\Projects\Unreal\TimeRunner\SourceArt\CyborgHands\CyborgHands_GripDetail.png'
+Blender 5.0.1 (hash a3db93c5b259 built 2025-12-16 01:32:30)
+
+Blender quit

@@ -54,7 +54,7 @@ public:
 
 protected:
 
-	UPROPERTY(EditAnywhere, Category = "Parameters|Attack")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Parameters|Attack")
 	FGameplayTag EventApplyDamage;
 
 private:

@@ -98,6 +98,9 @@ public:
 	void SetCanApplyTimeDilation_Implementation(bool CanDilation);
 	// ITimeDilationInterface end
 
+	UFUNCTION(BlueprintPure, Category = "Attack")
+	float GetDamage() const;
+
 protected:
 
 	// Character method begin
@@ -181,11 +184,11 @@ protected:
 
 	UPROPERTY(EditAnywhere, meta = (Category = "Parameters|Attack", ClampMin = "0.0"))
 	TObjectPtr<const UDamageAttributeSet> Damage;
-	UPROPERTY(EditAnywhere, meta = (Category = "Parameters|Attack", ClampMin = "0.0"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Category = "Parameters|Attack", ClampMin = "0.0"))
 	float DistanceAttack;
 	UPROPERTY(EditAnywhere, meta = (Category = "Parameters|Attack"))
 	TArray<TEnumAsByte<EObjectTypeQuery>> ChannelsAttack;
-	UPROPERTY(EditAnywhere, meta = (Category = "Parameters|Attack"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Category = "Parameters|Attack"))
 	TEnumAsByte<ETraceTypeQuery> TypeAttackChannel;
 
 	UPROPERTY(EditAnywhere, meta = (Category = "Parameters|Sockets"))
@@ -210,6 +213,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category = "Parameters|Dash|Tag")
 	FGameplayTagContainer DashTagAbility;
+
+	UPROPERTY(EditAnywhere, Category = "Parameters|Attack|Tag")
+	FGameplayTag ApplyAttackAbilityTag;
 
 	UPROPERTY(EditAnywhere)
 	bool CanTimeDilation{true};

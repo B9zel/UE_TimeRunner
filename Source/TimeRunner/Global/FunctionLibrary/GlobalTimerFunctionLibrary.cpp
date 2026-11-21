@@ -49,7 +49,7 @@ double UGlobalTimerFunctionLibrary::GetDeltaRealSeconds(const UObject* Object)
 	return World->GetTime().GetDeltaRealTimeSeconds();
 }
 
-void UGlobalTimerFunctionLibrary::ClearGlobalTimer(const UObject* Object, FGlobalTimerHandle& Timer)
+void UGlobalTimerFunctionLibrary::ClearGlobalTimer(const UObject* Object, UPARAM(ref) FGlobalTimerHandle& Timer)
 {
 	if (!Timer.IsValid()) return;
 

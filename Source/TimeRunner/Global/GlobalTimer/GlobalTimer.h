@@ -71,6 +71,7 @@ public:
 
 private:
 
+	UPROPERTY(Transient)
 	uint64 Id = 0;
 };
 
@@ -96,11 +97,13 @@ public:
 		LastTime = Other.LastTime;
 		IsLoop = Other.IsLoop;
 		Handler = Other.Handler;
+		OncePerFrame = Other.OncePerFrame;
 
 		Other.Delegate.UnBind();
 		Other.Rate = 0.0f;
 		Other.LastTime = 0.0f;
 		Other.IsLoop = false;
+		Other.OncePerFrame = false;
 		Other.Handler.Invalidate();
 	}
 
@@ -125,8 +128,10 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 	virtual TStatId GetStatId() const override;
+	virtual bool IsTickable() const override;
 
 	void StartGlobalTimer();
+	// Stops dispatch without clearing timers. Real time continues to elapse while stopped.
 	void StopGlobalTimer();
 
 	void SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDelegate Deligate, float InRate, bool InbLoop = false, const bool MaxOncePerFrame=false);
@@ -138,18 +143,23 @@ public:
 
 private:
 
-	void UpdateTimers();
+#if WITH_DEV_AUTOMATION_TESTS
+	friend struct FGlobalTimerTestAccess;
+#endif
+
+	void UpdateTimers(double Now);
+	void RemovePendingTimers();
 	int64 GenerateHadleID();
 
 private:
 
 	TMap<uint64, GlobalTimerData> Timers;
-	TArray<uint64> DeleteTimers;
+	TSet<uint64> DeleteTimers;
 	TMap<uint64, GlobalTimerData> AddTimer;
 	TMap<const void*, TSet<uint64>> ObjectToTimers;
-	FTimerHandle UpdateTimer;
 
 	bool IsUpdatingTimer{false};
+	bool CanTick{false};
 };
 
 template <class UserClass>
