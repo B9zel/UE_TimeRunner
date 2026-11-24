@@ -98,21 +98,39 @@ public:
 		IsLoop = Other.IsLoop;
 		Handler = Other.Handler;
 		OncePerFrame = Other.OncePerFrame;
+		TimeInvoke = Other.TimeInvoke;
 
 		Other.Delegate.UnBind();
 		Other.Rate = 0.0f;
 		Other.LastTime = 0.0f;
 		Other.IsLoop = false;
 		Other.OncePerFrame = false;
+		Other.TimeInvoke = 0.0f;
 		Other.Handler.Invalidate();
 	}
 
 	FGlobalUnifieldTimerDelegate Delegate;
 	FGlobalTimerHandle Handler;
 	float Rate{0.0f};
+	double TimeInvoke{0.0f};
 	double LastTime{0.0};
 	bool IsLoop{false};
 	bool OncePerFrame{false};
+};
+
+struct FTimerHeapEntry
+{
+	double TimeInvoke{0.0f};
+	uint64 Handle;
+};
+
+
+struct FComparePriorety
+{
+	bool operator()(const FTimerHeapEntry& Left, const FTimerHeapEntry& Right) const
+	{
+		return Left.TimeInvoke < Right.TimeInvoke;
+	}
 };
 
 UCLASS()
@@ -134,7 +152,7 @@ public:
 	// Stops dispatch without clearing timers. Real time continues to elapse while stopped.
 	void StopGlobalTimer();
 
-	void SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDelegate Deligate, float InRate, bool InbLoop = false, const bool MaxOncePerFrame=false);
+	void SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDelegate Deligate, float InRate, bool InbLoop = false, const bool MaxOncePerFrame = false);
 	template <class UserClass>
 	void SetTimer(FGlobalTimerHandle& Handle, UserClass* Object, typename FTimerDelegate::TMethodPtr<UserClass> Method, float InRate, bool InbLoop = false);
 	void ClearTimer(FGlobalTimerHandle& Handle);
@@ -145,8 +163,10 @@ private:
 
 #if WITH_DEV_AUTOMATION_TESTS
 	friend struct FGlobalTimerTestAccess;
+	TOptional<double> TestTime;
 #endif
 
+	double GetCurrentTime() const;
 	void UpdateTimers(double Now);
 	void RemovePendingTimers();
 	int64 GenerateHadleID();
@@ -157,6 +177,7 @@ private:
 	TSet<uint64> DeleteTimers;
 	TMap<uint64, GlobalTimerData> AddTimer;
 	TMap<const void*, TSet<uint64>> ObjectToTimers;
+	TArray<FTimerHeapEntry> HeapActiveTimers;
 
 	bool IsUpdatingTimer{false};
 	bool CanTick{false};

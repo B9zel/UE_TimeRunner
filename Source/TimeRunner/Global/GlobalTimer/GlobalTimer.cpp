@@ -2,6 +2,7 @@
 
 #include "Global/GlobalTimer/GlobalTimer.h"
 #include <cmath>
+#include <limits>
 
 namespace
 {
@@ -15,7 +16,15 @@ DECLARE_LOG_CATEGORY_CLASS(GlobalTimerLog, All, All);
 
 void UGlobalTimer::Tick(float DeltaTime)
 {
-	UpdateTimers(FPlatformTime::Seconds());
+	UpdateTimers(GetCurrentTime());
+}
+
+double UGlobalTimer::GetCurrentTime() const
+{
+#if WITH_DEV_AUTOMATION_TESTS
+	if (TestTime.IsSet()) return TestTime.GetValue();
+#endif
+	return FPlatformTime::Seconds();
 }
 
 TStatId UGlobalTimer::GetStatId() const
@@ -46,6 +55,11 @@ void UGlobalTimer::SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDele
 		return;
 	}
 
+	if (InRate < KINDA_SMALL_NUMBER)
+	{
+		InRate = KINDA_SMALL_NUMBER;
+	}
+
 	if (Handle.IsValid())
 	{
 		ClearTimer(Handle);
@@ -57,7 +71,8 @@ void UGlobalTimer::SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDele
 	GlobalTimerData Data;
 	Data.IsLoop = InbLoop;
 	Data.Rate = InRate;
-	Data.LastTime = FPlatformTime::Seconds();
+	Data.LastTime = GetCurrentTime();
+	Data.TimeInvoke = Data.LastTime + InRate;
 	Data.OncePerFrame = MaxOncePerFrame;
 	Data.Handler = Handle;
 
@@ -70,6 +85,11 @@ void UGlobalTimer::SetTimer(FGlobalTimerHandle& Handle, FGlobalUnifieldTimerDele
 	}
 	else
 	{
+
+		FTimerHeapEntry HeapData;
+		HeapData.TimeInvoke = Data.TimeInvoke;
+		HeapData.Handle = Data.Handler.Id;
+		HeapActiveTimers.HeapPush(HeapData, FComparePriorety());
 		Timers.Add(NewId, MoveTemp(Data));
 	}
 	DeleteTimers.Remove(NewId);
@@ -152,48 +172,103 @@ void UGlobalTimer::UpdateTimers(double Now)
 		{
 			if (!DeleteTimers.Contains(Timer.Key) && Timer.Value.Delegate.IsBound())
 			{
+				FTimerHeapEntry HeapData;
+				HeapData.TimeInvoke = Timer.Value.TimeInvoke;
+				HeapData.Handle = Timer.Value.Handler.Id;
+				HeapActiveTimers.HeapPush(HeapData, FComparePriorety());
 				Timers.Emplace(Timer.Key, MoveTemp(Timer.Value));
 			}
 		}
 	}
-	for (auto& Timer : Timers)
-	{
-		if (!CanTick) break;
-		if (DeleteTimers.Contains(Timer.Key)) continue;
+	// for (auto& Timer : Timers)
+	//{
+	//	if (!CanTick) break;
+	//	if (DeleteTimers.Contains(Timer.Key)) continue;
 
-		GlobalTimerData& Value = Timer.Value;
-		if (!Value.Delegate.IsBound())
+	//	GlobalTimerData& Value = Timer.Value;
+	//	if (!Value.Delegate.IsBound())
+	//	{
+	//		DeleteTimers.Add(Timer.Key);
+	//		Value.Handler.Invalidate();
+	//		continue;
+	//	}
+	//	const double Delta = Now - Value.LastTime;
+
+	//	if (Value.Rate <= Delta)
+	//	{
+	//		// Execute
+	//		// Clamp while still in double precision, before the conversion to int32.
+
+	//		const int32 CountExecute = (Value.OncePerFrame || !Value.IsLoop)
+	//									   ? 1
+	//									   : static_cast<int32>(FMath::Min(Delta / Value.Rate, static_cast<double>(MaxCallbacksPerTimerPerTick)));
+	//		for (int32 i = 0; i < CountExecute && CanTick && !DeleteTimers.Contains(Timer.Key) && Value.Delegate.IsBound(); ++i)
+	//		{
+	//			Value.Delegate.Execute();
+	//		}
+	//		// Execute
+
+	//		if (!Value.IsLoop || !Value.Delegate.IsBound())
+	//		{
+	//			DeleteTimers.Add(Timer.Key);
+	//			Value.Handler.Invalidate();
+	//		}
+	//		else
+	//		{
+	//			Value.LastTime = Now - std::fmod(Delta, static_cast<double>(Value.Rate));
+	//		}
+	//	}
+	//}
+
+	while (CanTick && !HeapActiveTimers.IsEmpty())
+	{
+		const FTimerHeapEntry Entry = HeapActiveTimers.HeapTop();
+		GlobalTimerData* Timer = Timers.Find(Entry.Handle);
+		if (!Timer || DeleteTimers.Contains(Entry.Handle))
 		{
-			DeleteTimers.Add(Timer.Key);
-			Value.Handler.Invalidate();
+			HeapActiveTimers.HeapPopDiscard(FComparePriorety(), EAllowShrinking::No);
 			continue;
 		}
-		const double Delta = Now - Value.LastTime;
 
-		if (Value.Rate <= Delta)
+		const bool bBound = Timer->Delegate.IsBound();
+		if (bBound && Entry.TimeInvoke > Now) break;
+
+		HeapActiveTimers.HeapPopDiscard(FComparePriorety(), EAllowShrinking::No);
+		if (!bBound)
 		{
-			// Execute
-			// Clamp while still in double precision, before the conversion to int32.
-			const int32 CountExecute = (Value.OncePerFrame || !Value.IsLoop)
-										   ? 1
-										   : static_cast<int32>(FMath::Min(Delta / Value.Rate, static_cast<double>(MaxCallbacksPerTimerPerTick)));
-			for (int32 i = 0; i < CountExecute && CanTick && !DeleteTimers.Contains(Timer.Key) && Value.Delegate.IsBound(); ++i)
-			{
-				Value.Delegate.Execute();
-			}
-			// Execute
-
-			if (!Value.IsLoop || !Value.Delegate.IsBound())
-			{
-				DeleteTimers.Add(Timer.Key);
-				Value.Handler.Invalidate();
-			}
-			else
-			{
-				Value.LastTime = Now - std::fmod(Delta, static_cast<double>(Value.Rate));
-			}
+			Timers.Remove(Entry.Handle);
+			continue;
 		}
+
+		const double Rate = Timer->Rate;
+		const double Lateness = Now - Entry.TimeInvoke;
+		const int32 CallCount = (Timer->OncePerFrame || !Timer->IsLoop)
+									? 1
+									: 1 + FMath::FloorToInt32(FMath::Min(Lateness / Rate, static_cast<double>(MaxCallbacksPerTimerPerTick - 1)));
+
+		for (int32 Call = 0; Call < CallCount && CanTick && !DeleteTimers.Contains(Entry.Handle) && Timer->Delegate.IsBound(); ++Call)
+		{
+			Timer->Delegate.Execute();
+		}
+
+		if (DeleteTimers.Contains(Entry.Handle)) continue;
+		if (!Timer->IsLoop || !Timer->Delegate.IsBound())
+		{
+			Timers.Remove(Entry.Handle);
+			continue;
+		}
+
+		const double Remainder = std::fmod(Lateness, Rate);
+		Timer->LastTime = Now - Remainder;
+		Timer->TimeInvoke = Now + (Rate - Remainder);
+		if (Timer->TimeInvoke <= Now)
+		{
+			// Keep the deadline strictly in the future when the addition rounds back to Now.
+			Timer->TimeInvoke = std::nextafter(Now, std::numeric_limits<double>::infinity());
+		}
+		HeapActiveTimers.HeapPush(FTimerHeapEntry{Timer->TimeInvoke, Entry.Handle}, FComparePriorety());
 	}
+
 	IsUpdatingTimer = false;
 	RemovePendingTimers();
 }

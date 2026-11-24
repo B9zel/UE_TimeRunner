@@ -155,7 +155,7 @@ void ATimerRunnerCharacter::InputRunTriggerCharacter(const FInputActionInstance&
 {
 	SetIsInputMove(true);
 
-	if ((GetIsOnGround() && !IsCrouching()) && !DilationComponent->GetIsTimeDilation())
+	if (CanActivateDilation() && !bPressedJump)
 	{
 		Execute_ApplyTimeDilation(this);
 	}
@@ -167,9 +167,14 @@ void ATimerRunnerCharacter::InputRunTriggerCharacter(const FInputActionInstance&
 	AddMovementInput(GetActorRightVector(), Direction.Y);
 }
 
+bool ATimerRunnerCharacter::CanActivateDilation()
+{
+	return GetIsOnGround() && !IsCrouching() && !DilationComponent->GetIsTimeDilation();
+}
+
 bool ATimerRunnerCharacter::GetIsOnGround()
 {
-	return GetCharacterMovement()->IsWalking();
+	return GetCharacterMovement()->IsMovingOnGround();
 }
 
 void ATimerRunnerCharacter::InputRunCompletedCharacter(const FInputActionInstance& Instance)

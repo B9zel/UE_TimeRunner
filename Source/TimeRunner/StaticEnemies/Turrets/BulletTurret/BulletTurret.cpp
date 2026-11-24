@@ -16,6 +16,23 @@ void ABulletTurret::BeginPlay()
 	// InstanceTimer = GetWorld()->GetGameInstance<UMainGameInstance>()->GetGlobalTimer();
 }
 
+void ABulletTurret::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (!TargetAttack.IsValid()) return;
+
+	FHitResult Res;
+	if (CheckCanAttackTarget(Res))
+	{
+		StartAttack();
+	}
+	else
+	{
+		StopAttack();
+	}
+}
+
 void ABulletTurret::OnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
 								   bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -30,13 +47,20 @@ void ABulletTurret::OnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActo
 {
 	if (TargetAttack == OtherActor)
 	{
+		TargetAttack = nullptr;
 		StopAttack();
 	}
 }
 
 void ABulletTurret::StartAttack()
 {
-	if (!m_RotateTimerHandle.IsValid() && !m_ShotTimerHandle.IsValid() && RateRotation > 0.0f && RateShot > 0.0f)
+	if (RateRotation <= 0.0f || RateShot <= 0.0f)
+	{
+		UE_LOG(BulletTurretLog, Warning, TEXT("RateRotation or RateShot are less or equal 0"));
+		return;
+	}
+
+	if (!m_RotateTimerHandle.IsValid() && !m_ShotTimerHandle.IsValid())
 	{
 		FTimerManagerTimerParameters Params;
 		Params.bLoop = true;
@@ -45,10 +69,6 @@ void ABulletTurret::StartAttack()
 		InstanceTimer->SetTimer(m_RotateTimerHandle, this, &ABulletTurret::OnRotateTurret, RateRotation, true); // GetWorldTimerManager().SetTimer(
 		//	m_RotateTimerHandle, this, &ThisClass::OnRotateTurret, RateRotation, Params);
 		InstanceTimer->SetTimer(m_ShotTimerHandle, this, &ThisClass::NotifyShot, RateShot, true);
-	}
-	else
-	{
-		UE_LOG(BulletTurretLog, Warning, TEXT("RateRotation or RateShot are less or equal 0"));
 	}
 }
 
@@ -59,19 +79,6 @@ void ABulletTurret::OnRotateTurret()
 		UE_LOG(BulletTurretLog, Display, TEXT("%s"), *TargetAttack->GetActorLocation().ToString());
 		const float Distance = (TargetAttack->GetActorLocation() - GetActorLocation()).Length();
 		if (Distance > DistanceAttack) return;
-
-		TArray<FHitResult> Hits;
-		TArray<AActor*> Ignore;
-
-		const bool IsHit = UKismetSystemLibrary::LineTraceMultiForObjects(this, GetActorLocation(), TargetAttack->GetActorLocation(), TargetCollisionChannels,
-																		  false, Ignore, EDrawDebugTrace::ForDuration, Hits, true);
-
-		if (!IsHit)
-		{
-			StopAttack();
-			TargetAttack = nullptr;
-			return;
-		}
 
 		MeshRotation->SetWorldRotation(CalculateNewRotateTurret());
 	}
@@ -135,6 +142,16 @@ float ABulletTurret::TurnToTarget(float Current, float Target, const float Speed
 			result -= FMath::Clamp((Current + 360.f - Target), -DeltaSpeed, DeltaSpeed);
 	}
 	return FRotator3f::ClampAxis(result);
+}
+
+bool ABulletTurret::CheckCanAttackTarget(FHitResult& Result)
+{
+	TArray<AActor*> Ignore;
+
+	const bool Res = UKismetSystemLibrary::LineTraceSingle(this, GetActorLocation(), TargetAttack->GetActorLocation(), AttackCollisionChannels, false, Ignore,
+												 EDrawDebugTrace::ForDuration, Result, true);
+
+	return Res && Result.GetActor() == TargetAttack;
 }
 
 void ABulletTurret::NotifyShot()

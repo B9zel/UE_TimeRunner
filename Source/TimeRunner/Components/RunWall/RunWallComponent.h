@@ -10,6 +10,7 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FToggleRunWall);
 
 class UAbilitySystemComponent;
+class UTRAbilitySystemComponent;
 class UArrowComponent;
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -48,6 +49,9 @@ public:
 
 	void SetArrowComponent(const UArrowComponent* Arrow);
 
+	UFUNCTION(BlueprintPure)
+	bool IsRightDirection() const;
+
 protected:
 
 	// Called when the game starts
@@ -65,6 +69,8 @@ private:
 	void DeactivateRunWall();
 	void ActivateRunWall();
 
+	FVector GetCurrentDirectionTrace() const;
+
 public:
 
 	FToggleRunWall ActivateRunWallDispatcher;
@@ -77,7 +83,7 @@ private:
 	UPROPERTY(BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
 	TWeakObjectPtr<const UArrowComponent> ArrowOwnerComponent;
 	UPROPERTY()
-	TWeakObjectPtr<UAbilitySystemComponent> OwnerAbilitySystem;
+	TWeakObjectPtr<UTRAbilitySystemComponent> OwnerAbilitySystem;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (Category = "Parameters|RunWall", AllowPrivateAccess = "true"))
 	TArray<TEnumAsByte<EObjectTypeQuery>> TypeChannelTrace;

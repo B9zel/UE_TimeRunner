@@ -14,6 +14,11 @@ class TIMERUNNER_API ABulletTurret : public ABaseTurret
 {
 	GENERATED_BODY()
 
+public:
+
+	virtual void Tick(float DeltaTime) override;
+
+
 protected:
 
 	virtual void BeginPlay() override;
@@ -37,6 +42,8 @@ private:
 
 	float TurnToTarget(float Current, float Target, const float Speed, const float DeltaTime);
 
+	bool CheckCanAttackTarget(FHitResult& Result);
+
 	UFUNCTION()
 	void NotifyShot();
 
@@ -51,5 +58,5 @@ private:
 	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TWeakObjectPtr<ATimerRunnerCharacter> TargetAttack;
 	UPROPERTY(EditAnywhere)
-	TArray<TEnumAsByte<EObjectTypeQuery>> TargetCollisionChannels;
+	TEnumAsByte<ETraceTypeQuery> AttackCollisionChannels;
 };

@@ -114,6 +114,7 @@ protected:
 	// Character method end
 
 	void InputRunTriggerCharacter(const FInputActionInstance& Instance);
+	bool CanActivateDilation();
 	void InputRunCompletedCharacter(const FInputActionInstance& Instance);
 	void InputLookCharacter(const FInputActionInstance& Instance);
 	void InputJumpStartCharacter(const FInputActionInstance& Instance);

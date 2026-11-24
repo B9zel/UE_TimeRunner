@@ -38,6 +38,19 @@ void UTRAbilitySystemComponent::CancelAciveAbilities(const FGameplayTagContainer
 	CancelAbilities(&WithTags, nullptr);
 }
 
+bool UTRAbilitySystemComponent::IsActiveAbilityByTag(const FGameplayTag Tag)
+{
+	for (auto& Ability : GetActivatableAbilities())
+	{
+		if (Ability.Ability->GetAssetTags().HasTagExact(Tag))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void UTRAbilitySystemComponent::BeginPlay()
 {
 	Super::BeginPlay();

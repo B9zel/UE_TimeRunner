@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Components/ArrowComponent.h"
+#include "AbilitySystem/Component/TRAbilitySystemComponent.h"
 
 URunWallComponent::URunWallComponent()
 {
@@ -24,7 +25,7 @@ void URunWallComponent::OnFullInitOwner()
 
 	if (auto* AbilityInterface = Cast<IAbilitySystemInterface>(OwnerCharacter))
 	{
-		OwnerAbilitySystem = AbilityInterface->GetAbilitySystemComponent();
+		OwnerAbilitySystem = Cast<UTRAbilitySystemComponent>(AbilityInterface->GetAbilitySystemComponent());
 	}
 	check(OwnerAbilitySystem.IsValid());
 
@@ -59,26 +60,36 @@ void URunWallComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 
 void URunWallComponent::DeactivateRunWall()
 {
-	IsWallRunning = false;
-	OwnerAbilitySystem->CancelAbilities(&RunWallTagAbility);
-	SetCurrentDirectionTrace(0.0f);
-	GEngine->AddOnScreenDebugMessage(-1, 4.0f, FColor::Blue, FString::Printf(TEXT("Cancel run Ability")));
-	DeactivateRunWallDispatcher.Broadcast();
+	if (IsWallRunning || OwnerAbilitySystem->IsActiveAbilityByTag(RunWallTagAbility.First()))
+	{
+		IsWallRunning = false;
+		OwnerAbilitySystem->CancelAbilities(&RunWallTagAbility);
+		SetCurrentDirectionTrace(0.0f);
+		GEngine->AddOnScreenDebugMessage(-1, 4.0f, FColor::Blue, FString::Printf(TEXT("Cancel run Ability")));
+		DeactivateRunWallDispatcher.Broadcast();
+	}
 }
 
 void URunWallComponent::ActivateRunWall()
 {
-	OwnerAbilitySystem->TryActivateAbilitiesByTag(RunWallTagAbility);
-	IsWallRunning = true;
-	GEngine->AddOnScreenDebugMessage(-1, 4.0f, FColor::Blue, FString::Printf(TEXT("Apply run Ability")));
+	if (OwnerAbilitySystem->TryActivateAbilitiesByTag(RunWallTagAbility))
+	{
+		IsWallRunning = true;
+		GEngine->AddOnScreenDebugMessage(-1, 4.0f, FColor::Blue, FString::Printf(TEXT("Apply run Ability")));
 
-	ActivateRunWallDispatcher.Broadcast();
+		ActivateRunWallDispatcher.Broadcast();
+	}
+}
+
+FVector URunWallComponent::GetCurrentDirectionTrace() const
+{
+	return ArrowOwnerComponent->GetForwardVector() * DirectionTrace;
 }
 
 bool URunWallComponent::CalculateCanRunWall(FHitResult& Res)
 {
 	if (FMath::IsNearlyZero(OwnerCharacter->GetVelocity().Size2D(), MinWallRunSpeed)) return false;
-	FVector Right = ArrowOwnerComponent->GetForwardVector() * DirectionTrace;
+	FVector Right = GetCurrentDirectionTrace();
 	TArray<AActor*> Ignore;
 	bool IsHit = UKismetSystemLibrary::LineTraceSingleForObjects(this, ArrowOwnerComponent->GetComponentLocation(),
 																 ArrowOwnerComponent->GetComponentLocation() + Right * LengthTraceRunWall, TypeChannelTrace,
@@ -89,6 +100,8 @@ bool URunWallComponent::CalculateCanRunWall(FHitResult& Res)
 
 void URunWallComponent::StartRunWall()
 {
+	if (!IsActive()) return;
+
 	CanRunWall = true;
 }
 
@@ -141,6 +154,11 @@ void URunWallComponent::SetArrowComponent(const UArrowComponent* Arrow)
 	{
 		ArrowOwnerComponent = Arrow;
 	}
+}
+
+bool URunWallComponent::IsRightDirection() const
+{
+	return GetOwner()->GetActorRightVector().Dot(GetCurrentDirectionTrace()) > 0 && GetOwner()->GetActorForwardVector().Dot(GetCurrentDirectionTrace()) > 0;
 }
 
 void URunWallComponent::Launch(const FVector& Direction, const float DirectionForce, const float ZForce)

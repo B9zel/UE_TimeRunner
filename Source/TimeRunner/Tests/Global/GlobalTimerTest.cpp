@@ -18,15 +18,15 @@
 // Control the clock boundary without sleeping, loading a map, or changing the public timer API.
 struct FGlobalTimerTestAccess
 {
-	static void ResetClock(UGlobalTimer& Timer)
+	static void SetTime(UGlobalTimer& Timer, double Now)
 	{
-		for (auto& Entry : Timer.Timers) Entry.Value.LastTime = 0.0;
-		for (auto& Entry : Timer.AddTimer) Entry.Value.LastTime = 0.0;
+		Timer.TestTime = Now;
 	}
 
 	static void TickAt(UGlobalTimer& Timer, double Now)
 	{
-		Timer.UpdateTimers(Now);
+		SetTime(Timer, Now);
+		Timer.Tick(0.0f);
 	}
 
 	static int32 GetTimerCount(const UGlobalTimer& Timer)
@@ -43,8 +43,9 @@ namespace
 	{
 		TStrongObjectPtr<UGlobalTimer> Timer{NewObject<UGlobalTimer>()};
 
-		FGlobalTimerFixture()
+		explicit FGlobalTimerFixture(double StartTime = 0.0)
 		{
+			FGlobalTimerTestAccess::SetTime(*Timer, StartTime);
 			Timer->StartGlobalTimer();
 		}
 
@@ -80,19 +81,29 @@ bool FGlobalTimerOncePerFrameTest::RunTest(const FString& Parameters)
 	{
 		Timer.SetTimer(Queued, FGobalTimerFunction([&] { ++QueuedCalls; }), 0.125f, true, true);
 	}), 0.125f);
-	FGlobalTimerTestAccess::ResetClock(Timer);
 	FGlobalTimerTestAccess::TickAt(Timer, 0.5);
 	TestEqual(TEXT("Direct timer executes once after four elapsed periods"), DirectCalls, 1);
 	TestTrue(TEXT("Queued timer is logically valid immediately"), Timer.IsValidTimer(Queued));
 	TestEqual(TEXT("New timer is deferred until the next update"), QueuedCalls, 0);
 
-	FGlobalTimerTestAccess::ResetClock(Timer);
-	FGlobalTimerTestAccess::TickAt(Timer, 0.4375);
+	FGlobalTimerTestAccess::TickAt(Timer, 0.9375);
 	TestEqual(TEXT("Once-per-frame survives both pending and active map moves"), QueuedCalls, 1);
-	FGlobalTimerTestAccess::TickAt(Timer, 0.46875);
+	FGlobalTimerTestAccess::TickAt(Timer, 0.96875);
 	TestEqual(TEXT("Skipped periods do not leave a backlog"), QueuedCalls, 1);
-	FGlobalTimerTestAccess::TickAt(Timer, 0.5);
+	FGlobalTimerTestAccess::TickAt(Timer, 1.0);
 	TestEqual(TEXT("Once-per-frame retains its fractional interval"), QueuedCalls, 2);
+
+	constexpr double StartTime = 17'000'000.0;
+	FGlobalTimerFixture LargeClock(StartTime);
+	FGlobalTimerHandle SixtyHz;
+	int32 Calls = 0;
+	LargeClock.Timer->SetTimer(SixtyHz, FGobalTimerFunction([&] { ++Calls; }), 1.0f / 60.0f, true, true);
+	FGlobalTimerTestAccess::TickAt(*LargeClock.Timer, StartTime + 0.1);
+	TestEqual(TEXT("A rounded deadline cannot dispatch twice in one tick"), Calls, 1);
+	FGlobalTimerTestAccess::TickAt(*LargeClock.Timer, StartTime + 0.1);
+	TestEqual(TEXT("A rescheduled deadline is strictly in the future"), Calls, 1);
+	FGlobalTimerTestAccess::TickAt(*LargeClock.Timer, StartTime + 0.12);
+	TestEqual(TEXT("The timer continues on a later tick"), Calls, 2);
 	return true;
 }
 
@@ -100,12 +111,15 @@ bool FGlobalTimerPendingCancellationTest::RunTest(const FString& Parameters)
 {
 	FGlobalTimerFixture Fixture;
 	UGlobalTimer& Timer = *Fixture.Timer;
-	FGlobalTimerHandle Parent, Pending, PendingCopy;
+	FGlobalTimerHandle Parent, Pending, PendingCopy, Other;
 	int32 ParentCalls = 0;
 	int32 PendingCalls = 0;
+	int32 OtherCalls = 0;
+	Timer.SetTimer(Other, FGobalTimerFunction([&] { ++OtherCalls; }), 0.25f);
 	Timer.SetTimer(Parent, FGobalTimerFunction([&]
 	{
 		++ParentCalls;
+		Timer.ClearTimer(Other);
 		Timer.SetTimer(Pending, FGobalTimerFunction([&] { ++PendingCalls; }), 0.125f, true);
 		PendingCopy = Pending;
 		TestTrue(TEXT("Pending timer exists before cancellation"), Timer.IsValidTimer(Pending));
@@ -114,12 +128,11 @@ bool FGlobalTimerPendingCancellationTest::RunTest(const FString& Parameters)
 		TestFalse(TEXT("Copied handle cannot find the canceled pending timer"), Timer.IsValidTimer(PendingCopy));
 		Timer.ClearTimer(Parent);
 	}), 0.125f, true);
-	FGlobalTimerTestAccess::ResetClock(Timer);
 	FGlobalTimerTestAccess::TickAt(Timer, 0.5);
 	TestEqual(TEXT("Self-cancellation stops the current catch-up loop"), ParentCalls, 1);
+	TestEqual(TEXT("Another due timer canceled by the callback never executes"), OtherCalls, 0);
 	Timer.ClearTimer(PendingCopy);
 	TestFalse(TEXT("Clearing an already canceled handle invalidates that copy too"), PendingCopy.IsValid());
-	FGlobalTimerTestAccess::ResetClock(Timer);
 	FGlobalTimerTestAccess::TickAt(Timer, 1.0);
 	TestEqual(TEXT("Canceled pending callback never executes"), PendingCalls, 0);
 	return true;
@@ -140,10 +153,8 @@ bool FGlobalTimerPendingReplacementTest::RunTest(const FString& Parameters)
 		TestFalse(TEXT("Replaced pending timer is immediately inactive"), Timer.IsValidTimer(Replaced));
 		TestTrue(TEXT("Replacement is immediately valid"), Timer.IsValidTimer(Pending));
 	}), 0.125f);
-	FGlobalTimerTestAccess::ResetClock(Timer);
 	FGlobalTimerTestAccess::TickAt(Timer, 0.125);
-	FGlobalTimerTestAccess::ResetClock(Timer);
-	FGlobalTimerTestAccess::TickAt(Timer, 0.125);
+	FGlobalTimerTestAccess::TickAt(Timer, 0.25);
 	TestEqual(TEXT("Replacement does not leave an orphan timer"), OldCalls, 0);
 	TestEqual(TEXT("Only the replacement executes"), NewCalls, 1);
 	return true;
@@ -160,16 +171,16 @@ bool FGlobalTimerCatchUpTest::RunTest(const FString& Parameters)
 	Timer.SetTimer(Loop, FGobalTimerFunction([&] { ++LoopCalls; }), 0.125f, true);
 	Timer.SetTimer(Tiny, FGobalTimerFunction([&] { ++TinyCalls; }), std::numeric_limits<float>::min(), true);
 	Timer.SetTimer(Once, FGobalTimerFunction([&] { ++OnceCalls; }), 0.125f);
-	FGlobalTimerTestAccess::ResetClock(Timer);
-	FGlobalTimerTestAccess::TickAt(Timer, 128.0625);
+	constexpr double HitchTime = 262144.0625;
+	FGlobalTimerTestAccess::TickAt(Timer, HitchTime);
 	TestEqual(TEXT("A hitch is limited to 256 callbacks per timer"), LoopCalls, 256);
 	TestEqual(TEXT("A quotient above int32 range is bounded before conversion"), TinyCalls, 256);
 	TestEqual(TEXT("One-shot timer still fires exactly once"), OnceCalls, 1);
 	TestFalse(TEXT("One-shot is logically removed immediately"), Timer.IsValidTimer(Once));
 	Timer.ClearTimer(Tiny);
-	FGlobalTimerTestAccess::TickAt(Timer, 128.09375);
+	FGlobalTimerTestAccess::TickAt(Timer, HitchTime + 0.03125);
 	TestEqual(TEXT("Excess catch-up is dropped, not retried next frame"), LoopCalls, 256);
-	FGlobalTimerTestAccess::TickAt(Timer, 128.125);
+	FGlobalTimerTestAccess::TickAt(Timer, HitchTime + 0.0625);
 	TestEqual(TEXT("Fractional time survives the catch-up cap"), LoopCalls, 257);
 	return true;
 }
@@ -192,7 +203,6 @@ bool FGlobalTimerInvalidRatesTest::RunTest(const FString& Parameters)
 		Timer.SetTimer(Handle, FGobalTimerFunction([&] { ++Calls; }), Rate, true);
 		TestFalse(TEXT("Invalid rate cannot create a new timer"), Timer.IsValidTimer(Handle));
 	}
-	FGlobalTimerTestAccess::ResetClock(Timer);
 	FGlobalTimerTestAccess::TickAt(Timer, 1.0);
 	TestEqual(TEXT("Rejected timers never execute"), Calls, 0);
 	return true;
@@ -201,14 +211,16 @@ bool FGlobalTimerInvalidRatesTest::RunTest(const FString& Parameters)
 bool FGlobalTimerStartStopTest::RunTest(const FString& Parameters)
 {
 	TStrongObjectPtr<UGlobalTimer> Timer(NewObject<UGlobalTimer>());
-	FGlobalTimerHandle Handle;
+	FGlobalTimerTestAccess::SetTime(*Timer, 0.0);
+	FGlobalTimerHandle Handle, OneShot;
 	int32 Calls = 0;
+	int32 OneShotCalls = 0;
+	Timer->SetTimer(OneShot, FGobalTimerFunction([&] { ++OneShotCalls; }), 0.25f);
 	Timer->SetTimer(Handle, FGobalTimerFunction([&]
 	{
 		++Calls;
 		Timer->StopGlobalTimer();
 	}), 0.125f, true);
-	FGlobalTimerTestAccess::ResetClock(*Timer);
 	TestFalse(TEXT("Manager starts disabled"), Timer->IsTickable());
 	FGlobalTimerTestAccess::TickAt(*Timer, 0.5);
 	TestEqual(TEXT("No dispatch before Start"), Calls, 0);
@@ -216,6 +228,8 @@ bool FGlobalTimerStartStopTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Start enables ticking"), Timer->IsTickable());
 	FGlobalTimerTestAccess::TickAt(*Timer, 0.5);
 	TestEqual(TEXT("Stop inside callback interrupts catch-up immediately"), Calls, 1);
+	TestEqual(TEXT("Stop leaves the other due callback undispatched"), OneShotCalls, 0);
+	TestTrue(TEXT("Stop keeps the due one-shot active"), Timer->IsValidTimer(OneShot));
 	TestFalse(TEXT("Stop disables ticking"), Timer->IsTickable());
 	FGlobalTimerTestAccess::TickAt(*Timer, 1.0);
 	Timer->Tick(0.0f);
@@ -224,6 +238,7 @@ bool FGlobalTimerStartStopTest::RunTest(const FString& Parameters)
 	Timer->StartGlobalTimer();
 	FGlobalTimerTestAccess::TickAt(*Timer, 1.0);
 	TestEqual(TEXT("Restart resumes retained timers"), Calls, 2);
+	TestEqual(TEXT("Restart dispatches the retained one-shot"), OneShotCalls, 1);
 	Timer->StopGlobalTimer();
 	return true;
 }
@@ -235,7 +250,6 @@ bool FGlobalTimerCadenceTest::RunTest(const FString& Parameters)
 	FGlobalTimerHandle Handle;
 	int32 Calls = 0;
 	Timer.SetTimer(Handle, FGobalTimerFunction([&] { ++Calls; }), 0.125f, true);
-	FGlobalTimerTestAccess::ResetClock(Timer);
 	FGlobalTimerTestAccess::TickAt(Timer, 0.1875);
 	TestEqual(TEXT("First overdue update fires once"), Calls, 1);
 	FGlobalTimerTestAccess::TickAt(Timer, 0.25);
@@ -276,7 +290,6 @@ bool FGlobalTimerDeadDelegateTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Live target keeps its timer valid"), Timer.IsValidTimer(Handle));
 	Target->MarkAsGarbage();
 	TestFalse(TEXT("Dead target makes its timer logically invalid before its deadline"), Timer.IsValidTimer(Handle));
-	FGlobalTimerTestAccess::ResetClock(Timer);
 	FGlobalTimerTestAccess::TickAt(Timer, 0.125);
 	TestFalse(TEXT("Dead callback resources are released on the next update, before the deadline"), WeakResource.IsValid());
 	Timer.ClearTimer(Handle);
@@ -314,7 +327,6 @@ bool FGlobalTimerReleaseTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("Self-cancellation retains captures until the callback returns"), WeakResource.IsValid());
 	}), 0.125f, true);
 	Resource.Reset();
-	FGlobalTimerTestAccess::ResetClock(Timer);
 	FGlobalTimerTestAccess::TickAt(Timer, 0.5);
 	TestFalse(TEXT("Self-canceled captures are released before Update returns despite Stop"), WeakResource.IsValid());
 	TestFalse(TEXT("Canceled pending captures are released in the same update"), WeakPendingResource.IsValid());
@@ -342,6 +354,7 @@ bool FGlobalTimerCountermotionTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	UGlobalTimer& Timer = *GameInstance->GetGlobalTimer();
+	FGlobalTimerTestAccess::SetTime(Timer, 0.0);
 	Timer.StartGlobalTimer();
 	APawn* Pawn = World->SpawnActor<APawn>();
 	APlayerController* Controller = World->SpawnActor<APlayerController>();
@@ -356,7 +369,6 @@ bool FGlobalTimerCountermotionTest::RunTest(const FString& Parameters)
 	Controller->Possess(Pawn);
 	Controller->SetControlRotation(FRotator(0.0, 25.0, 0.0));
 	TestEqual(TEXT("First possession starts one timer"), FGlobalTimerTestAccess::GetTimerCount(Timer), 1);
-	FGlobalTimerTestAccess::ResetClock(Timer);
 	FGlobalTimerTestAccess::TickAt(Timer, 1.0);
 	TestEqual(TEXT("Recording stores the controller rotation"), Component->GetOldData().Rotation.Yaw, 25.0);
 
@@ -371,8 +383,7 @@ bool FGlobalTimerCountermotionTest::RunTest(const FString& Parameters)
 	Controller->Possess(Pawn);
 	Controller->SetControlRotation(FRotator(0.0, 70.0, 0.0));
 	TestEqual(TEXT("Re-possession restarts exactly one timer"), FGlobalTimerTestAccess::GetTimerCount(Timer), 1);
-	FGlobalTimerTestAccess::ResetClock(Timer);
-	FGlobalTimerTestAccess::TickAt(Timer, 1.0);
+	FGlobalTimerTestAccess::TickAt(Timer, 3.0);
 	TestEqual(TEXT("Recording resumes with the new control rotation"), Component->GetOldData().Rotation.Yaw, 70.0);
 
 	Component->DestroyComponent();
@@ -416,14 +427,12 @@ bool FGlobalTimerReentrantCleanupTest::RunTest(const FString& Parameters)
 		Timer.ClearTimer(First);
 		Timer.ClearTimer(Second);
 	}), 0.125f);
-	FGlobalTimerTestAccess::ResetClock(Timer);
 	FGlobalTimerTestAccess::TickAt(Timer, 0.125);
 	TestFalse(TEXT("Canceled timers stay logically invalid throughout capture destruction"), SawCanceledTimerAsValid);
 	TestFalse(TEXT("Capture destructor can cancel another timer and release its resources"), WeakSecondResource.IsValid());
 	TestTrue(TEXT("Capture destructor can safely create a replacement timer"), Timer.IsValidTimer(Added));
 	TestEqual(TEXT("Cleanup prevents reentrant dispatch"), Calls, 0);
-	FGlobalTimerTestAccess::ResetClock(Timer);
-	FGlobalTimerTestAccess::TickAt(Timer, 0.125);
+	FGlobalTimerTestAccess::TickAt(Timer, 0.25);
 	TestEqual(TEXT("Timer created during cleanup executes on the next update"), Calls, 1);
 	return true;
 }

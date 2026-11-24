@@ -20,6 +20,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void CancelAciveAbilities(const FGameplayTagContainer WithTags);
+	UFUNCTION(BlueprintPure)
+	bool IsActiveAbilityByTag(const FGameplayTag Tag);
 
 protected:
 
